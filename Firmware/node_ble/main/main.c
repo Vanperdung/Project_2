@@ -143,7 +143,7 @@ static const esp_gatts_attr_db_t gatt_db[HEART_RATE_TOTAL] =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&primary_service_uuid, ESP_GATT_PERM_READ, sizeof(uint16_t), sizeof(GATTS_SERVICE_UUID_TEST), (uint8_t*)&GATTS_SERVICE_UUID_TEST}},
     // Characteristic Declaration
     [HEART_RATE_MEAS_INDEX_CHAR] = 
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&character_declaration_uuid, ESP_GATT_PERM_READ, sizeof(uint16_t), sizeof(uint8_t), (uint8_t*)&char_prop_read_write_notify}},
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&character_declaration_uuid, ESP_GATT_PERM_READ, sizeof(uint8_t), sizeof(uint8_t), (uint8_t*)&char_prop_read_write_notify}},
     // Characteristic Value
     [HEART_RATE_MEAS_INDEX_VAL] = 
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&GATTS_CHAR_UUID_TEST_A, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t*)char_value}},
@@ -152,13 +152,13 @@ static const esp_gatts_attr_db_t gatt_db[HEART_RATE_TOTAL] =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&character_client_config_uuid, ESP_GATT_PERM_READ, sizeof(uint16_t), sizeof(heart_measurement_ccc), (uint8_t*)heart_measurement_ccc}},
     // Characteristic Declaration
     [SENSOR_LCT_INDEX_CHAR] = 
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&character_declaration_uuid, ESP_GATT_PERM_READ, sizeof(uint16_t), sizeof(uint16_t), (uint8_t*)&char_prop_read}},
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&character_declaration_uuid, ESP_GATT_PERM_READ, sizeof(uint8_t), sizeof(uint8_t), (uint8_t*)&char_prop_read}},
     // Chacracteristic Value
     [SENSOR_LCT_INDEX_VAL] = 
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&GATTS_CHAR_UUID_TEST_B, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t*)char_value}},
     // Characteristic Declaration
     [HEART_RATE_CTL_INDEX_CHAR] = 
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&character_declaration_uuid, ESP_GATT_PERM_READ, sizeof(uint16_t), sizeof(uint16_t), (uint8_t*)&char_prop_write}},
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&character_declaration_uuid, ESP_GATT_PERM_READ, sizeof(uint8_t), sizeof(uint8_t), (uint8_t*)&char_prop_write}},
     // Characteristic Value
     [CONTROL_POINT_INDEX_VAL] = 
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&GATTS_CHAR_UUID_TEST_C, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t*)char_value}},

@@ -1,0 +1,3 @@
+Permission với từng attribute có tác dụng với attribute đó.
+Còn ESP_GATT_CHAR_PROP_BIT_... có tác dụng với cả characteristic.
+Client Characteristic Configuration Descriptor có UUID là 0x2902.
