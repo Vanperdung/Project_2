@@ -36,7 +36,7 @@ static const int NODE_ID = 4;
 static const char *PROFILE_1_TAG = "HEART_PROFILE";
 static uint8_t service_uuid[16] = {0x10, 0x83, 0xda, 0x90, 0xd7, 0xd8, 0x49, 0x64, 0x84, 0xfd, 0x51, 0x7b, 0xd9, 0x1d, 0x0d, 0x6d};
 static uint8_t adv_config_done = 0;
-static uint8_t mac_addr[15] = {0};
+static uint8_t mac_hex[6] = {0};
 enum 
 {
     HEART_RATE_INDEX_SERVICE = 0,
@@ -149,7 +149,7 @@ static const esp_gatts_attr_db_t gatt_db[HEART_RATE_TOTAL] =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&GATTS_CHAR_UUID_TEST_A, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t*)char_value}},
     // Client Characteristic Configuration Descriptor
     [HEART_RATE_MEAS_NOTI_INDEX_CFG] = 
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&character_client_config_uuid, ESP_GATT_PERM_READ, sizeof(uint16_t), sizeof(heart_measurement_ccc), (uint8_t*)heart_measurement_ccc}},
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&character_client_config_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, sizeof(uint16_t), sizeof(heart_measurement_ccc), (uint8_t*)heart_measurement_ccc}},
     // Characteristic Declaration
     [SENSOR_LCT_INDEX_CHAR] = 
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t*)&character_declaration_uuid, ESP_GATT_PERM_READ, sizeof(uint8_t), sizeof(uint8_t), (uint8_t*)&char_prop_read}},
@@ -206,6 +206,15 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
                 ESP_LOGI(TAG, "Stop adv successfully");
             }
             break;
+        case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
+            ESP_LOGI(TAG, "update connection params status = %d, min_int = %d, max_int = %d, conn_int = %d, latency = %d, timeout = %d",
+                    param->update_conn_params.status,
+                    param->update_conn_params.min_int,
+                    param->update_conn_params.max_int,
+                    param->update_conn_params.conn_int,
+                    param->update_conn_params.latency,
+                    param->update_conn_params.timeout);
+            break;
         default:
             break;
     }
@@ -248,38 +257,19 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
     {
         esp_err_t ret;
         case ESP_GATTS_REG_EVT:
-            ESP_LOGI(PROFILE_1_TAG, "ESP_GATTS_REG_EVT");
+            ESP_LOGI(PROFILE_1_TAG, "ESP_GATTS_REG_EVT, status %d, app_id %d\n", param->reg.status, param->reg.app_id);
             uint8_t type_node[30] = {0};
             uint8_t node_id[30] = {0};
             sprintf((char*)type_node, "{\"type_node\":\"%s\"}", DEVICE_TYPE);
-            sprintf((char*)node_id, "{\"node_id\":%d}", NODE_ID);
-            ESP_LOGI(PROFILE_1_TAG, "type_node: %s, node_id: %s", type_node, node_id);
-
-            // ret = esp_ble_gap_config_adv_data(&heart_rate_adv_config);
-            // if(ret)
-            // {
-            //     ESP_LOGE(PROFILE_1_TAG, "Config adv data failed, error code %x", ret);
-            // }
-            // adv_config_done |= ADV_CONFIG_FLAG;
-            // ret = esp_ble_gap_config_adv_data(&ble_rsp_data);
-            // if(ret)
-            // {
-            //     ESP_LOGE(PROFILE_1_TAG, "Config scan response data failed, error code %x", ret);
-            // }
-            // adv_config_done |= SCAN_RSP_CONFIG_FLAG;
-            // ret = esp_ble_gap_set_device_name((char*)device_name);
-            // if(ret)
-            // {
-            //     ESP_LOGE(TAG, "Set device name failed, error code %x", ret);
-            // }
-
-            esp_err_t raw_adv_ret = esp_ble_gap_config_adv_data_raw(type_node, strlen(type_node));
+            sprintf((char*)node_id, "{\"mac\":\"%s\",\"node_id\":%d}", mac_hex, NODE_ID);
+            // ESP_LOGI(PROFILE_1_TAG, "type_node: %s, node_id: %s", type_node, node_id);
+            esp_err_t raw_adv_ret = esp_ble_gap_config_adv_data_raw(type_node, strlen((char*)type_node));
             if(raw_adv_ret)
             {
                 ESP_LOGE(PROFILE_1_TAG, "Config raw adv data failed, error code = %x", raw_adv_ret);
             }
             adv_config_done |= ADV_CONFIG_FLAG;
-            esp_err_t raw_scan_ret = esp_ble_gap_config_scan_rsp_data_raw(node_id, strlen(node_id));
+            esp_err_t raw_scan_ret = esp_ble_gap_config_scan_rsp_data_raw(node_id, strlen((char*)node_id));
             if(raw_scan_ret)
             {
                 ESP_LOGE(PROFILE_1_TAG, "Config raw scan rsp data failed, error code = %x", raw_scan_ret);
@@ -308,6 +298,72 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 esp_ble_gatts_start_service(heart_rate_handle_table[HEART_RATE_INDEX_SERVICE]);
             }
             break;
+        case ESP_GATTS_MTU_EVT:
+            ESP_LOGI(PROFILE_1_TAG, "ESP_GATTS_MTU_EVT, MTU %d", param->mtu.mtu);
+            break;
+        case ESP_GATTS_CONF_EVT:
+            ESP_LOGI(PROFILE_1_TAG, "ESP_GATTS_CONF_EVT, status %d, attr_handle %d", param->conf.status, param->conf.handle);
+            break;
+        case ESP_GATTS_START_EVT:
+            ESP_LOGI(PROFILE_1_TAG, "ESP_GATTS_START_EVT, status %d, service_handle %d", param->start.status, param->start.service_handle);
+            break;
+        case ESP_GATTS_CONNECT_EVT:
+            ESP_LOGI(PROFILE_1_TAG, "ESP_GATTS_CONNECT_EVT, conn_id = %d", param->connect.conn_id);
+            esp_log_buffer_hex(PROFILE_1_TAG, param->connect.remote_bda, 6);
+            esp_ble_conn_update_params_t conn_params = {0};
+            memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
+            /* For the iOS system, please refer to Apple official documents about the BLE connection parameters restrictions. */
+            conn_params.latency = 0;
+            conn_params.max_int = 0x20;    // max_int = 0x20*1.25ms = 40ms
+            conn_params.min_int = 0x10;    // min_int = 0x10*1.25ms = 20ms
+            conn_params.timeout = 400;    // timeout = 400*10ms = 4000ms
+            //start sent the update connection parameters to the peer device.
+            esp_ble_gap_update_conn_params(&conn_params);
+            break;
+        case ESP_GATTS_READ_EVT:
+        {
+            ESP_LOGI(PROFILE_1_TAG, "ESP_GATTS_READ_EVT, conn_id %d, trans_id %d, handle %d\n", param->read.conn_id, param->read.trans_id, param->read.handle);
+            esp_gatt_rsp_t rsp;
+            char data_read[10] = {"hehe lolo"};
+            memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
+            rsp.attr_value.handle = param->read.handle;
+            rsp.attr_value.len = strlen(data_read);
+            strcpy((char*)rsp.attr_value.value, data_read);
+            esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id, ESP_GATT_OK, &rsp);
+            break;
+        }
+        case ESP_GATTS_WRITE_EVT:
+            if(!param->write.is_prep)
+            {
+                // the data length of gattc write must be less than GATTS_DEMO_CHAR_VAL_LEN_MAX.
+                ESP_LOGI(PROFILE_1_TAG, "ESP_GATTS_WRITE_EVT, handle = %d, value len = %d, value:", param->write.handle, param->write.len);
+                esp_log_buffer_hex(PROFILE_1_TAG, param->write.value, param->write.len);
+                if(heart_rate_handle_table[HEART_RATE_MEAS_NOTI_INDEX_CFG] == param->write.handle && param->write.len == 2)
+                {
+                    uint16_t descr_value = param->write.value[1] << 8 | param->write.value[0];
+                    if(descr_value == 0x0001)
+                    {
+                        ESP_LOGI(PROFILE_1_TAG, "Notify enable");
+                        uint8_t notify_data[15];
+                        for(int i = 0; i < sizeof(notify_data); ++i)
+                        {
+                            notify_data[i] = i;
+                        }
+                        esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, heart_rate_handle_table[HEART_RATE_MEAS_NOTI_INDEX_CFG],
+                                                sizeof(notify_data), notify_data, false);
+                    }
+                    else if(descr_value == 0x0000)
+                        ESP_LOGI(PROFILE_1_TAG, "Notify disable");
+                    else
+                    {
+                        ESP_LOGE(PROFILE_1_TAG, "Unknown descr value");
+                        esp_log_buffer_hex(PROFILE_1_TAG, param->write.value, param->write.len);
+                    }
+                }
+                if(param->write.need_rsp)
+                    esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
+            }
+            break;
         default:
             break;
     }
@@ -325,7 +381,8 @@ void app_main(void)
     ESP_ERROR_CHECK(ret);
     uint8_t mac_hex[6] = {0};
     esp_efuse_mac_get_default(mac_hex);
-    sprintf((char*)mac_addr, "%02x%02x%02x%02x%02x%02x", mac_hex[0], mac_hex[1], mac_hex[2], mac_hex[3], mac_hex[4], mac_hex[5]);
+    // sprintf((char*)mac_addr, "%02x%02x%02x%02x%02x%02x", mac_hex[0], mac_hex[1], mac_hex[2], mac_hex[3], mac_hex[4], mac_hex[5]);
+    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ret = esp_bt_controller_init(&bt_cfg);
     if(ret)

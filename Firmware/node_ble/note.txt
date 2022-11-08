@@ -1,3 +1,7 @@
 Permission với từng attribute có tác dụng với attribute đó.
 Còn ESP_GATT_CHAR_PROP_BIT_... có tác dụng với cả characteristic.
 Client Characteristic Configuration Descriptor có UUID là 0x2902.
+Read và Write properties của một attribute là thông tin mà được show cho client để client biết server có chấp nhận read và write request hay không.
+Do đó properties đóng vai trò như một gợi ý để client truy cập đúng resource.
+Mặt khác permission là sự ủy quyền cho client để read hoặc write attribute đó. 
+VD: nếu client cố gắng write vào attribute mà nó không có write permission, server sẽ từ chối request đó cho dù write property được set.
