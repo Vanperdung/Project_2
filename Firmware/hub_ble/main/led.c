@@ -83,9 +83,9 @@ void led_task(void *param)
                 break;
             case SMARTCONFIG:   
                 gpio_set_level(LED_STATUS_PIN, LED_ON);
-                vTaskDelay(100 / portTICK_RATE_MS);
+                vTaskDelay(500 / portTICK_RATE_MS);
                 gpio_set_level(LED_STATUS_PIN, LED_OFF);
-                vTaskDelay(100 / portTICK_RATE_MS);
+                vTaskDelay(500 / portTICK_RATE_MS);
                 break;
             case FOTA:
                 gpio_set_level(LED_STATUS_PIN, LED_ON);

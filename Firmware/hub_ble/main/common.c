@@ -67,8 +67,8 @@ bool ble_cJSON_process(char *data, ble_object_t *ble_object)
                                                                         cur_element->valuestring[3],
                                                                         cur_element->valuestring[4],
                                                                         cur_element->valuestring[5]);
-            else if(strcmp(cur_string, "node_id") == 0)
-                ble_object->node_id = cur_element->valueint;
+            else if(strcmp(cur_string, "sum") == 0)
+                ble_object->sum = cur_element->valueint;
         }
     }
     cJSON_Delete(root);

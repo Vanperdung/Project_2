@@ -96,9 +96,9 @@ void app_main(void)
     xTaskCreate(&led_task, "led_task", 2048, NULL, 5, NULL);
     wifi_init();
     ESP_ERROR_CHECK(ret);
-    if(smartconfig_flag == true)
+    if(smartconfig_flag == ENABLE_SC)
     {
-        smartconfig_flag = false;
+        smartconfig_flag = DISABLE_SC;
         status = SMARTCONFIG;
         smartconfig_init();
     }
@@ -120,8 +120,12 @@ void app_main(void)
             ESP_LOGI(TAG, "%s", wifi_cfg.sta.password);
             ble_init();
             wifi_sta(wifi_cfg, WIFI_MODE_STA);
+            while(status != NORMAL_MODE)
+            {
+                vTaskDelay(100 / portTICK_RATE_MS);
+            }
             mqtt_client_sta();
-            xTaskCreate(&ble_task, "ble_task", 4096, NULL, 10, NULL);
+            // xTaskCreate(&ble_task, "ble_task", 4096, NULL, 10, NULL);
         }
         while(1)
         {

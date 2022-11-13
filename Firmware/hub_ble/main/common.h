@@ -6,7 +6,7 @@ typedef struct
 {
     char type_node[15];
     char mac_addr[15];
-    int node_id;
+    int sum;
 } ble_object_t;
 
 typedef struct 
