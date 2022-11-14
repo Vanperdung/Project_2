@@ -60,7 +60,7 @@ char topic_commands_node_connected[50] = {0};
 char topic_messages_control[50] = {0};
 char topic_messages_update[50] = {0};
 char topic_messages_status[50] = {0};
-const char *VERSION = "0.0.1";
+const char *VERSION = "0.0.2";
 extern esp_mqtt_client_handle_t client; 
 
 void app_main(void)
@@ -129,7 +129,7 @@ void app_main(void)
         }
         while(1)
         {
-            if(status == NORMAL_MODE && xTaskGetTickCount() - tick >= 1000 / portTICK_RATE_MS)
+            if(status == NORMAL_MODE && xTaskGetTickCount() - tick >= 5000 / portTICK_RATE_MS)
             {
                 tick = xTaskGetTickCount();
                 esp_mqtt_client_publish(client, topic_commands_ping, ping_data, strlen(ping_data), 0, 0);

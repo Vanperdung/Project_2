@@ -46,6 +46,7 @@
 #include "wifi_sta.h"
 #include "common.h"
 #include "main.h"
+
 extern char hub_id[15];
 extern char topic_commands_version[50];
 extern char topic_commands_status[50];
@@ -137,7 +138,7 @@ static void mqtt_task(void *param)
 
                     esp_ble_gattc_write_char(node_profile_tab[index].gattc_if,
                                              node_profile_tab[index].conn_id,
-                                               node_profile_tab[index].char_handle,
+                                             node_profile_tab[index].char_handle,
                                              strlen(mqtt_object.control),
                                              (uint8_t *)mqtt_object.control,
                                              ESP_GATT_WRITE_TYPE_NO_RSP,
@@ -147,7 +148,7 @@ static void mqtt_task(void *param)
             }
             else if (strcmp(mqtt_object.action, "update") == 0)
             {
-                // xTaskCreate(&fota_task, "fota_task", 8192, mqtt_object.url, 10, NULL);
+                xTaskCreate(&fota_task, "fota_task", 8192, mqtt_object.url, 10, NULL);
             }
             else if (strcmp(mqtt_object.action, "start_scan") == 0)
             {
