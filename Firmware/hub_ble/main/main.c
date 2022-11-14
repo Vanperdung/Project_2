@@ -129,7 +129,7 @@ void app_main(void)
         }
         while(1)
         {
-            if(status == NORMAL_MODE && xTaskGetTickCount() - tick >= 5000 / portTICK_RATE_MS)
+            if(status == NORMAL_MODE && xTaskGetTickCount() - tick >= 1000 / portTICK_RATE_MS)
             {
                 tick = xTaskGetTickCount();
                 esp_mqtt_client_publish(client, topic_commands_ping, ping_data, strlen(ping_data), 0, 0);

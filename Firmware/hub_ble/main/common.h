@@ -4,17 +4,16 @@
 
 typedef struct 
 {
-    char type_node[15];
+    char node_type[15];
     char mac_addr[15];
-    int sum;
+    int total_switch;
 } ble_object_t;
 
 typedef struct 
 {
     char action[10];
     char node_id[15];
-    int end_point;
-    int control;
+    char control[10];
     char url[100];
     int duration;
 } mqtt_object_t;

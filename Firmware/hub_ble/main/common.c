@@ -47,56 +47,54 @@
 #include "common.h"
 #include "main.h"
 
-bool ble_cJSON_process(char *data, ble_object_t *ble_object)
-{
-    cJSON *root = cJSON_Parse(data);
-    if(root == NULL)
-        return false;
-    cJSON *cur_element = NULL;
-    cJSON_ArrayForEach(cur_element, root)
-    {
-        if(cur_element->string)
-        {
-            const char *cur_string = cur_element->string;
-            if(strcmp(cur_string, "type_node") == 0)
-                memcpy(ble_object->type_node, cur_element->valuestring, strlen(cur_element->valuestring) + 1);
-            else if(strcmp(cur_string, "mac") == 0)
-                sprintf(ble_object->mac_addr, "%02x%02x%02x%02x%02x%02x", cur_element->valuestring[0],
-                                                                        cur_element->valuestring[1],
-                                                                        cur_element->valuestring[2],
-                                                                        cur_element->valuestring[3],
-                                                                        cur_element->valuestring[4],
-                                                                        cur_element->valuestring[5]);
-            else if(strcmp(cur_string, "sum") == 0)
-                ble_object->sum = cur_element->valueint;
-        }
-    }
-    cJSON_Delete(root);
-    return true;
-}
+// bool ble_cJSON_process(char *data, ble_object_t *ble_object)
+// {
+//     cJSON *root = cJSON_Parse(data);
+//     if(root == NULL)
+//         return false;
+//     cJSON *cur_element = NULL;
+//     cJSON_ArrayForEach(cur_element, root)
+//     {
+//         if(cur_element->string)
+//         {
+//             const char *cur_string = cur_element->string;
+//             if(strcmp(cur_string, "type_node") == 0)
+//                 memcpy(ble_object->type_node, cur_element->valuestring, strlen(cur_element->valuestring) + 1);
+//             else if(strcmp(cur_string, "mac") == 0)
+//                 sprintf(ble_object->mac_addr, "%02x%02x%02x%02x%02x%02x", cur_element->valuestring[0],
+//                                                                         cur_element->valuestring[1],
+//                                                                         cur_element->valuestring[2],
+//                                                                         cur_element->valuestring[3],
+//                                                                         cur_element->valuestring[4],
+//                                                                         cur_element->valuestring[5]);
+//             else if(strcmp(cur_string, "sum") == 0)
+//                 ble_object->sum = cur_element->valueint;
+//         }
+//     }
+//     cJSON_Delete(root);
+//     return true;
+// }
 
 bool mqtt_cJSON_process(char *data, mqtt_object_t *mqtt_object)
 {
     cJSON *root = cJSON_Parse(data);
-    if(root == NULL)
+    if (root == NULL)
         return false;
     cJSON *cur_element = NULL;
     cJSON_ArrayForEach(cur_element, root)
     {
-        if(cur_element->string)
+        if (cur_element->string)
         {
             const char *cur_string = cur_element->string;
-            if(strcmp(cur_string, "action") == 0)
+            if (strcmp(cur_string, "action") == 0)
                 memcpy(mqtt_object->action, cur_element->valuestring, strlen(cur_element->valuestring) + 1);
-            else if(strcmp(cur_string, "node_id") == 0)
+            else if (strcmp(cur_string, "node_id") == 0)
                 memcpy(mqtt_object->node_id, cur_element->valuestring, strlen(cur_element->valuestring) + 1);
-            else if(strcmp(cur_string, "end_point") == 0)
-                mqtt_object->end_point = cur_element->valueint;
-            else if(strcmp(cur_string, "control") == 0)
-                mqtt_object->control = cur_element->valueint;
-            else if(strcmp(cur_string, "url") == 0)
+            else if (strcmp(cur_string, "control") == 0)
+                memcpy(mqtt_object->control, cur_element->valuestring, strlen(cur_element->valuestring) + 1);
+            else if (strcmp(cur_string, "url") == 0)
                 memcpy(mqtt_object->url, cur_element->valuestring, strlen(cur_element->valuestring) + 1);
-            else if(strcmp(cur_string, "duration") == 0)
+            else if (strcmp(cur_string, "duration") == 0)
                 mqtt_object->duration = cur_element->valueint;
         }
     }
