@@ -25,6 +25,8 @@
 #include "esp_tls.h"
 #include "esp_smartconfig.h"
 #include "esp_attr.h"
+#include "esp_spiffs.h"
+
 #include "mqtt_client.h"
 
 #include "driver/gpio.h"
@@ -60,6 +62,7 @@ extern char topic_commands_node_connected[50];
 extern char topic_messages_control[50];
 extern char topic_messages_update[50];
 extern char topic_messages_status[50];
+extern unsigned char node_list; 
 
 static const char *PROFILE_A_TAG = "PROFILE_A";
 static const char *PROFILE_B_TAG = "PROFILE_B";
@@ -1990,6 +1993,13 @@ static void gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_
 void ble_init(void)
 {
     esp_err_t ret;
+    FILE *node_list_file = fopen(NODE_LIST_FILE, "r");
+    if(node_list_file = NULL)
+        ESP_LOGE(TAG, "Cannot open file %s", NODE_LIST_FILE);
+    if(fread(&node_list, 1, 1, node_list_file) == 0)
+        ESP_LOGE(TAG, "No data yet");
+    else
+        
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ret = esp_bt_controller_init(&bt_cfg);
     if (ret)

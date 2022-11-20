@@ -61,6 +61,7 @@ char topic_messages_control[50] = {0};
 char topic_messages_update[50] = {0};
 char topic_messages_status[50] = {0};
 const char *VERSION = "0.0.2";
+unsigned char node_list; 
 extern esp_mqtt_client_handle_t client; 
 
 void app_main(void)
@@ -92,6 +93,7 @@ void app_main(void)
     sprintf(topic_messages_update, "messages/%s/update", hub_id);
     sprintf(topic_messages_status, "messages/%s/status", hub_id);
     sprintf(topic_commands_node_connected, "messages/%s/node_connected", hub_id);
+    mount_SPIFFS();
     xTaskCreate(&button_task, "button_task", 2048, NULL, 10, NULL);
     xTaskCreate(&led_task, "led_task", 2048, NULL, 5, NULL);
     wifi_init();
