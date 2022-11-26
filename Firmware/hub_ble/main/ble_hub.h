@@ -35,13 +35,6 @@ typedef struct
 } gattc_profile_inst;
 
 #define NODE_LIST_FILE "node_list.bin"
-#define NODE_0 "node_0.txt"
-#define NODE_1 "node_1.txt"
-#define NODE_2 "node_2.txt"
-#define NODE_3 "node_3.txt"
-#define NODE_4 "node_4.txt"
-#define NODE_5 "node_5.txt"
-#define NODE_6 "node_6.txt"
 
 void ble_init(void);
 void start_scanning(int duration);

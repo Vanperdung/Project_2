@@ -4,6 +4,7 @@
 
 typedef struct 
 {
+    bool available;
     char node_type[15];
     char mac_addr[15];
     int total_switch;

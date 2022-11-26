@@ -61,7 +61,7 @@ char topic_messages_control[50] = {0};
 char topic_messages_update[50] = {0};
 char topic_messages_status[50] = {0};
 const char *VERSION = "0.0.2";
-unsigned char node_list; 
+unsigned char node_list_value; 
 extern esp_mqtt_client_handle_t client; 
 
 void app_main(void)

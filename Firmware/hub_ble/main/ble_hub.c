@@ -62,7 +62,7 @@ extern char topic_commands_node_connected[50];
 extern char topic_messages_control[50];
 extern char topic_messages_update[50];
 extern char topic_messages_status[50];
-extern unsigned char node_list; 
+extern unsigned char node_list_value;
 
 static const char *PROFILE_A_TAG = "PROFILE_A";
 static const char *PROFILE_B_TAG = "PROFILE_B";
@@ -88,6 +88,8 @@ static bool connect_d = false;
 static bool connect_e = false;
 static bool connect_f = false;
 static bool connect_g = false;
+
+char *node_id_file[15] = {"node_0.bin", "node_1.bin", "node_2.bin", "node_3.bin", "node_4.bin", "node_5.bin", "node_6.bin"};
 
 extern esp_mqtt_client_handle_t client;
 extern status_t status;
@@ -194,7 +196,7 @@ bool check_list(char *mac_addr)
 {
     for (int i = 0; i < PROFILE_NUM; i++)
     {
-        if(strcmp(node_object[i].mac_addr, mac_addr) == 0)
+        if (strcmp(node_object[i].mac_addr, mac_addr) == 0)
         {
             return false;
         }
@@ -352,11 +354,11 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
     case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
         ESP_LOGI(TAG, "ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT");
         ESP_LOGI(TAG, "Update connection params status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d", param->update_conn_params.status,
-                                                                                                                                    param->update_conn_params.min_int,
-                                                                                                                                    param->update_conn_params.max_int,
-                                                                                                                                    param->update_conn_params.conn_int,
-                                                                                                                                    param->update_conn_params.latency,
-                                                                                                                                    param->update_conn_params.timeout);
+                 param->update_conn_params.min_int,
+                 param->update_conn_params.max_int,
+                 param->update_conn_params.conn_int,
+                 param->update_conn_params.latency,
+                 param->update_conn_params.timeout);
         break;
     default:
         break;
@@ -1993,13 +1995,29 @@ static void gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_
 void ble_init(void)
 {
     esp_err_t ret;
+    char file_name[10] = {0};
     FILE *node_list_file = fopen(NODE_LIST_FILE, "r");
-    if(node_list_file = NULL)
+    if (node_list_file = NULL)
         ESP_LOGE(TAG, "Cannot open file %s", NODE_LIST_FILE);
-    if(fread(&node_list, 1, 1, node_list_file) == 0)
-        ESP_LOGE(TAG, "No data yet");
-    else
-        
+    else if (fread(&node_list_value, 1, 1, node_list_file) != 0)
+    {
+        for (int index = 0; index < 7; index++)
+        {
+            node_object[index].available = node_list_value | (1 << index);
+            if(node_object[index].available)
+            {
+                FILE *node_id_file = fopen(node_id_file[index], "r");
+                if(node_id_file == NULL)
+                    ESP_LOGE(TAG, "Cannot open file %s", node_id_file[index]);
+                else 
+                {
+                    fread(&node_object[index], 1, sizeof(node_object[index], )))
+                }
+
+            }
+        }
+    }
+    fclose(node_list_file);
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ret = esp_bt_controller_init(&bt_cfg);
     if (ret)
