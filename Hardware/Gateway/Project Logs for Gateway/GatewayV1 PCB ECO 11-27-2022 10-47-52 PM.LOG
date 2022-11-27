@@ -1,0 +1,11 @@
+Removed Pin From Net: NetName=NetC9_2 Pin=DB1-2
+Removed Pin From Net: NetName=NetC9_1 Pin=DB1-3
+Removed Pin From Net: NetName=NetC7_2 Pin=DB1-4
+Removed Member From Class: ClassName=Power Member=DB1
+Change Component Designator: OldDesignator=IC1 NewDesignator=IC2
+Change Component Designator: OldDesignator=IC2 NewDesignator=IC3
+Added Component: Designator=IC1(MB6S)
+Added Pin To Net: NetName=NetC9_2 Pin=IC1-4
+Change Net Name : Old Net Name=NetIC1_3 New Net Name=NetIC2_3
+Change Net Name : Old Net Name=NetIC2_4 New Net Name=NetIC3_4
+Added Member To Class: ClassName=Power Member=Component IC3 TNY264

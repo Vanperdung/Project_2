@@ -1,0 +1,4 @@
+Added Pin To Net: NetName=NetC7_2 Pin=IC1-1
+Added Pin To Net: NetName=NetC6_1 Pin=IC1-2
+Added Pin To Net: NetName=NetC9_1 Pin=IC1-3
+Added Member To Class: ClassName=Power Member=Component IC1 MB6S
