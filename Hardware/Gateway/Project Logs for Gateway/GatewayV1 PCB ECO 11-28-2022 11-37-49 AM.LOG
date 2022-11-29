@@ -1,0 +1,15 @@
+Removed Pin From Net: NetName=NetIC2_3 Pin=U3-2
+Removed Member From Class: ClassName=ESP32 Member=R11
+Removed Member From Class: ClassName=ESP32 Member=R12
+Change Component Footprint: Designator=C10 Old Footprint=C8mm New Footprint=tu hoa 8mm
+Change Component Footprint: Designator=U3 Old Footprint=DIP4/W0.3 New Footprint=SOP4
+Change Component Comment : Designator=U3 Old Comment=PC817 New Comment=OPTO PC817 SMD
+Added Member To Class: ClassName=ESP32 Member=Component R2 1k
+Added Member To Class: ClassName=ESP32 Member=Component R3 1k
+Added Member To Class: ClassName=ESP32 Member=Component R4 10k
+Added Member To Class: ClassName=ESP32 Member=Component R5 10k
+Added Member To Class: ClassName=ESP32 Member=Component R6 10k
+Added Member To Class: ClassName=Power Member=Component R7 82k
+Added Member To Class: ClassName=Power Member=Component R8 200R
+Added Member To Class: ClassName=Power Member=Component R9 2R/2W
+Added Member To Class: ClassName=Power Member=Component R10 10k

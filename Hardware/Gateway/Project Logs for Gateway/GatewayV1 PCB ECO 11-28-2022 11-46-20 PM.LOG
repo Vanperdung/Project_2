@@ -1,0 +1,16 @@
+Change Component Designator: OldDesignator=J2 NewDesignator=J1
+Added Component: Designator=USB1(USB Micro 5p DIP)
+Add component (AddParameter): Name = "Ma_Hang"; Value = "MH005145"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ten"; Value = "MicroUSB MK5P DIP"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=+5 Pin=USB1-1
+Added Pin To Net: NetName=D_N Pin=USB1-3
+Added Pin To Net: NetName=D_P Pin=USB1-4
+Added Pin To Net: NetName=GND Pin=USB1-5
+Added Pin To Net: NetName=GND Pin=USB1-5
+Added Pin To Net: NetName=GND Pin=USB1-5
+Added Pin To Net: NetName=GND Pin=USB1-5
+Added Pin To Net: NetName=GND Pin=USB1-5
+Added Pin To Net: NetName=GND Pin=USB1-5
+Added Pin To Net: NetName=GND Pin=USB1-5
+Change Net Name : Old Net Name=NetJ2_1 New Net Name=NetJ1_1
+Added Member To Class: ClassName=ESP32 Member=Component USB1 USB Micro 5p DIP

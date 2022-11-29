@@ -1,0 +1,33 @@
+Removed Pin From Net: NetName=GND Pin=C7-1
+Removed Member From Class: ClassName=ESP32 Member=C7
+Change Component Designator: OldDesignator=C8 NewDesignator=C7
+Change Component Designator: OldDesignator=C9 NewDesignator=C8
+Change Component Designator: OldDesignator=C10 NewDesignator=C9
+Change Component Designator: OldDesignator=C11 NewDesignator=C10
+Change Component Designator: OldDesignator=C12 NewDesignator=C11
+Change Component Designator: OldDesignator=C13 NewDesignator=C12
+Change Component Designator: OldDesignator=C14 NewDesignator=C13
+Change Component Designator: OldDesignator=C15 NewDesignator=C14
+Added Pin To Net: NetName=GND Pin=C3-1
+Added Pin To Net: NetName=GND Pin=C4-1
+Added Pin To Net: NetName=GND Pin=C5-1
+Added Pin To Net: NetName=GND Pin=C6-1
+Added Pin To Net: NetName=GND Pin=R1-1
+Added Pin To Net: NetName=GND Pin=R2-2
+Added Pin To Net: NetName=GND Pin=R4-1
+Added Pin To Net: NetName=GND Pin=U1-2
+Added Pin To Net: NetName=GND Pin=U1-2
+Added Pin To Net: NetName=GND Pin=U2-2
+Added Pin To Net: NetName=GND Pin=U3-4
+Added Pin To Net: NetName=GND Pin=U3-16
+Change Net Name : Old Net Name=GND New Net Name=+3.3V
+Change Net Name : Old Net Name=NetC8_1 New Net Name=NetC7_1
+Change Net Name : Old Net Name=NetC8_2 New Net Name=NetC7_2
+Change Net Name : Old Net Name=NetC9_2 New Net Name=NetC8_2
+Change Net Name : Old Net Name=NetC11_1 New Net Name=NetC10_1
+Change Net Name : Old Net Name=NetC11_2 New Net Name=NetC10_2
+Change Net Name : Old Net Name=NetC12_1 New Net Name=NetC11_1
+Change Net Name : Old Net Name=NetC13_1 New Net Name=NetC12_1
+Change Net Name : Old Net Name=NetC14_1 New Net Name=NetC13_1
+Change Net Name : Old Net Name=NetC14_2 New Net Name=NetC13_2
+Change Net Name : Old Net Name=NetC15_2 New Net Name=NetC14_2

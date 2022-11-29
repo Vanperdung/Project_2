@@ -1,0 +1,23 @@
+Removed Member From Class: ClassName=ESP32 Member=C10
+Removed Member From Class: ClassName=ESP32 Member=C12
+Removed Member From Class: ClassName=ESP32 Member=C13
+Removed Member From Class: ClassName=ESP32 Member=C15
+Removed Member From Class: ClassName=ESP32 Member=R8
+Removed Member From Class: ClassName=ESP32 Member=U4
+Added Member To Class: ClassName=ESP32 Member=Component C1 10uF
+Added Member To Class: ClassName=ESP32 Member=Component C2 100nF
+Added Member To Class: ClassName=ESP32 Member=Component C3 10uF
+Added Member To Class: ClassName=ESP32 Member=Component C4 100nF
+Added Member To Class: ClassName=ESP32 Member=Component C5 100nF
+Added Member To Class: ClassName=ESP32 Member=Component C6 10uF
+Added Member To Class: ClassName=ESP32 Member=Component C7 100nF
+Added Member To Class: ClassName=Power Member=Component C8 1nF/400V
+Added Member To Class: ClassName=Power Member=Component C9 10uF/400V
+Added Member To Class: ClassName=Power Member=Component C11 20D471K
+Added Member To Class: ClassName=ESP32 Member=Component R5 1k
+Added Member To Class: ClassName=ESP32 Member=Component R7 10k
+Added Member To Class: ClassName=Power Member=Component R9 200R
+Added Member To Class: ClassName=Power Member=Component R11 10k
+Added Member To Class: ClassName=Power Member=Component R12 3.3k
+Added Member To Class: ClassName=ESP32 Member=Component U1 LM1117-ADJ
+Added Member To Class: ClassName=ESP32 Member=Component U3 CH340C

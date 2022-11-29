@@ -1,0 +1,8 @@
+Added Component: Designator=BT2(Nut Nhan 2 Chan SMD 3x6x2.5)
+Add component (AddParameter): Name = "Ma_Hang"; Value = "MH001036"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ten"; Value = "Nút Nh?n 2 Chân 3x6x2.5MM SMD"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=GND Pin=BT1-1
+Added Pin To Net: NetName=EN Pin=BT1-2
+Added Pin To Net: NetName=GND Pin=BT2-1
+Added Pin To Net: NetName=IO0 Pin=BT2-2
+Added Member To Class: ClassName=ESP32 Member=Component BT2 Nut Nhan 2 Chan SMD 3x6x2.5
