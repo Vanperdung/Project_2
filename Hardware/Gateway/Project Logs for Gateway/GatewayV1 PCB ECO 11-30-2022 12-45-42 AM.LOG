@@ -1,0 +1,32 @@
+Removed Pin From Net: NetName=+5 Pin=JP1-1
+Change Component Designator: OldDesignator=B1 NewDesignator=B2
+Change Component Designator: OldDesignator=B2 NewDesignator=B3
+Change Component Designator: OldDesignator=R1 NewDesignator=R3
+Change Component Designator: OldDesignator=R3 NewDesignator=R4
+Change Component Designator: OldDesignator=R4 NewDesignator=R5
+Change Component Designator: OldDesignator=R5 NewDesignator=R6
+Change Component Designator: OldDesignator=R6 NewDesignator=R7
+Change Component Designator: OldDesignator=R7 NewDesignator=R8
+Change Component Designator: OldDesignator=R8 NewDesignator=R9
+Change Component Designator: OldDesignator=R9 NewDesignator=R10
+Change Component Designator: OldDesignator=R10 NewDesignator=R11
+Change Component Designator: OldDesignator=R11 NewDesignator=R12
+Change Component Designator: OldDesignator=R12 NewDesignator=R13
+Change Component Designator: OldDesignator=R13 NewDesignator=R14
+Added Component: Designator=B1(Button 3x4x2.5)
+Added Component: Designator=R1(RES-SMD-0805)
+Add component (AddParameter): Name = "Class"; Value = "Passive"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer"; Value = "Generic Components"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Published"; Value = "08/06/2000"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Publisher"; Value = "Altium Hobart Technology Centre"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=GND Pin=B1-1
+Added Pin To Net: NetName=NetC12_1 Pin=JP1-1
+Added Pin To Net: NetName=+3.3V Pin=R1-1
+Change Net Name : Old Net Name=NetC12_1 New Net Name=+5_sw
+Change Net Name : Old Net Name=NetR9_2 New Net Name=NetR10_2
+Added Pin To Net: NetName=IO27 Pin=B1-2
+Added Pin To Net: NetName=IO27 Pin=R1-2
+Added Pin To Net: NetName=IO27 Pin=U2-12
+Added Net: Name=IO27
+Added Member To Class: ClassName=ESP32 Member=Component B3 Button 3x4x2.5
+Added Member To Class: ClassName=ESP32 Member=Component R8 10k

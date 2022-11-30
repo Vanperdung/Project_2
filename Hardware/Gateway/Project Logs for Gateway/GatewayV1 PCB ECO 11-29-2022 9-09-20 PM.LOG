@@ -1,0 +1,34 @@
+Change Component Designator: OldDesignator=J1 NewDesignator=J2
+Added Component: Designator=J1(CON10_100_61201021621_TH_ST)
+Add component (AddParameter): Name = "Alternate Part Number-1"; Value = "NA"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Case/Package"; Value = "TH-CON"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Crimp Part Number"; Value = "63911015521CAB"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer"; Value = "Wurth Electronics"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer Part Number"; Value = "61201021621"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Mating Part Number"; Value = "61201023021"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier Part Number-1"; Value = "61201021621"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier-1"; Value = "WURTH"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=+3.3V Pin=J1-1
+Added Pin To Net: NetName=GND Pin=J1-2
+Added Pin To Net: NetName=IO0 Pin=J1-4
+Added Pin To Net: NetName=GND Pin=J1-10
+Change Net Name : Old Net Name=NetJ1_1 New Net Name=NetJ2_1
+Added Pin To Net: NetName=IO5 Pin=J1-3
+Added Pin To Net: NetName=IO5 Pin=U2-29
+Added Net: Name=IO5
+Added Pin To Net: NetName=IO18 Pin=J1-5
+Added Pin To Net: NetName=IO18 Pin=U2-30
+Added Net: Name=IO18
+Added Pin To Net: NetName=IO23 Pin=J1-6
+Added Pin To Net: NetName=IO23 Pin=U2-37
+Added Net: Name=IO23
+Added Pin To Net: NetName=IO25 Pin=J1-7
+Added Pin To Net: NetName=IO25 Pin=U2-10
+Added Net: Name=IO25
+Added Pin To Net: NetName=IO26 Pin=J1-8
+Added Pin To Net: NetName=IO26 Pin=U2-11
+Added Net: Name=IO26
+Added Pin To Net: NetName=IO35 Pin=J1-9
+Added Pin To Net: NetName=IO35 Pin=U2-7
+Added Net: Name=IO35
+Added Member To Class: ClassName=ESP32 Member=Component J1 61201021621

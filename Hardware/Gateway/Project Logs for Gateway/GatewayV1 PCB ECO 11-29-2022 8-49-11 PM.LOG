@@ -1,0 +1,20 @@
+Removed Pin From Net: NetName=GND Pin=BT1-1
+Removed Pin From Net: NetName=EN Pin=BT1-2
+Removed Pin From Net: NetName=GND Pin=BT2-1
+Removed Pin From Net: NetName=IO0 Pin=BT2-2
+Removed Member From Class: ClassName=ESP32 Member=BT1
+Removed Member From Class: ClassName=ESP32 Member=BT2
+Added Component: Designator=AN1(DE ANTEN SMA CONG)
+Added Component: Designator=B1(Button 3x4x2.5)
+Added Component: Designator=B2(Button 3x4x2.5)
+Added Pin To Net: NetName=GND Pin=AN1-2
+Added Pin To Net: NetName=GND Pin=AN1-3
+Added Pin To Net: NetName=GND Pin=AN1-4
+Added Pin To Net: NetName=GND Pin=AN1-5
+Added Pin To Net: NetName=GND Pin=B1-1
+Added Pin To Net: NetName=EN Pin=B1-2
+Added Pin To Net: NetName=GND Pin=B2-1
+Added Pin To Net: NetName=IO0 Pin=B2-2
+Added Member To Class: ClassName=ESP32 Member=Component AN1 ANTENA
+Added Member To Class: ClassName=ESP32 Member=Component B1 Button 3x4x2.5
+Added Member To Class: ClassName=ESP32 Member=Component B2 Button 3x4x2.5

@@ -1,0 +1,6 @@
+Added Component: Designator=AN1(DE ANTEN SMA CONG)
+Added Pin To Net: NetName=GND Pin=AN1-2
+Added Pin To Net: NetName=GND Pin=AN1-3
+Added Pin To Net: NetName=GND Pin=AN1-4
+Added Pin To Net: NetName=GND Pin=AN1-5
+Added Member To Class: ClassName=ESP32 Member=Component AN1 ANTENA

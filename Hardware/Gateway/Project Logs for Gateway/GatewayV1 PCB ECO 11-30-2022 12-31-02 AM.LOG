@@ -1,0 +1,4 @@
+Removed Pin From Net: NetName=IO35 Pin=JP1-6
+Removed Pin From Net: NetName=IO26 Pin=JP1-8
+Added Pin To Net: NetName=IO26 Pin=JP1-6
+Added Pin To Net: NetName=IO35 Pin=JP1-8

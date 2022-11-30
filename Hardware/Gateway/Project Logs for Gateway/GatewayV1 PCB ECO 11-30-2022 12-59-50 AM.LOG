@@ -1,0 +1,14 @@
+Removed Pin From Net: NetName=GND Pin=AN1-2
+Removed Pin From Net: NetName=GND Pin=AN1-3
+Removed Pin From Net: NetName=GND Pin=AN1-4
+Removed Pin From Net: NetName=GND Pin=AN1-5
+Removed Member From Class: ClassName=ESP32 Member=R10
+Added Member To Class: ClassName=ESP32 Member=Component B1 Button 3x4x2.5
+Added Member To Class: ClassName=ESP32 Member=Component R1 10k
+Added Member To Class: ClassName=ESP32 Member=Component R3 10k
+Added Member To Class: ClassName=ESP32 Member=Component R4 1k
+Added Member To Class: ClassName=ESP32 Member=Component R5 10k
+Added Member To Class: ClassName=ESP32 Member=Component R7 10k
+Added Member To Class: ClassName=Power Member=Component R9 82k
+Added Member To Class: ClassName=Power Member=Component R11 2R/2W
+Added Member To Class: ClassName=Power Member=Component R13 3.3k
