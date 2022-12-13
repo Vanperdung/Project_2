@@ -1,0 +1,9 @@
+Added Component: Designator=IC4(TPS5430)
+Added Pin To Net: NetName=NetC15_1 Pin=IC4-1
+Added Pin To Net: NetName=NetIC4_4 Pin=IC4-4
+Added Pin To Net: NetName=NetIC4_5 Pin=IC4-5
+Added Pin To Net: NetName=GND Pin=IC4-6
+Added Pin To Net: NetName=+12 Pin=IC4-7
+Added Pin To Net: NetName=NetC15_2 Pin=IC4-8
+Added Pin To Net: NetName=GND Pin=IC4-9
+Added Member To Class: ClassName=Power Member=Component IC4 TPS5430-2

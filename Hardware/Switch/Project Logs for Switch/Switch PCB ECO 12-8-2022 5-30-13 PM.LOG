@@ -1,0 +1,18 @@
+Added Component: Designator=JP1(Coc_dong)
+Added Component: Designator=JP2(Coc_dong)
+Added Component: Designator=JP3(Coc_dong)
+Added Component: Designator=JP4(Coc_dong)
+Added Component: Designator=JP5(Coc_dong)
+Added Component: Designator=JP6(Coc_dong)
+Added Pin To Net: NetName=L_1 Pin=JP1-1
+Added Pin To Net: NetName=L_AC Pin=JP2-1
+Added Pin To Net: NetName=N_AC Pin=JP3-1
+Added Pin To Net: NetName=L_2 Pin=JP4-1
+Added Pin To Net: NetName=L_3 Pin=JP5-1
+Added Pin To Net: NetName=L_4 Pin=JP6-1
+Added Member To Class: ClassName=Switch Member=Component JP1 Coc_dong
+Added Member To Class: ClassName=Switch Member=Component JP2 Coc_dong
+Added Member To Class: ClassName=Switch Member=Component JP3 Coc_dong
+Added Member To Class: ClassName=Switch Member=Component JP4 Coc_dong
+Added Member To Class: ClassName=Switch Member=Component JP5 Coc_dong
+Added Member To Class: ClassName=Switch Member=Component JP6 Coc_dong

@@ -1,0 +1,9 @@
+Removed Pin From Net: NetName=GND Pin=JP7-1
+Removed Pin From Net: NetName=GND Pin=JP7-2
+Removed Pin From Net: NetName=+12 Pin=JP7-3
+Removed Pin From Net: NetName=+12 Pin=JP7-4
+Change Component Comment : Designator=R3 Old Comment=200R New Comment=500R
+Added Pin To Net: NetName=+12 Pin=JP7-1
+Added Pin To Net: NetName=+12 Pin=JP7-2
+Added Pin To Net: NetName=GND Pin=JP7-3
+Added Pin To Net: NetName=GND Pin=JP7-4

@@ -1,0 +1,20 @@
+Removed Pin From Net: NetName=+12 Pin=P1-1
+Removed Pin From Net: NetName=L_1 Pin=P1-2
+Removed Pin From Net: NetName=+12 Pin=P1-3
+Removed Pin From Net: NetName=L_2 Pin=P1-4
+Removed Pin From Net: NetName=GND Pin=P1-5
+Removed Pin From Net: NetName=L_3 Pin=P1-6
+Removed Pin From Net: NetName=GND Pin=P1-7
+Removed Pin From Net: NetName=L_4 Pin=P1-8
+Removed Member From Class: ClassName=Switch Member=P1
+Added Component: Designator=J1(JP4x2)
+Add component (AddParameter): Name = "Value"; Value = "Connector 4x2"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=+12 Pin=J1-1
+Added Pin To Net: NetName=+12 Pin=J1-2
+Added Pin To Net: NetName=GND Pin=J1-3
+Added Pin To Net: NetName=GND Pin=J1-4
+Added Pin To Net: NetName=L_1 Pin=J1-5
+Added Pin To Net: NetName=L_2 Pin=J1-6
+Added Pin To Net: NetName=L_3 Pin=J1-7
+Added Pin To Net: NetName=L_4 Pin=J1-8
+Added Member To Class: ClassName=Switch Member=Component J1 Connector 4x2

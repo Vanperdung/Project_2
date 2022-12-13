@@ -1,0 +1,18 @@
+Added Component: Designator=IC5(TTP224)
+Added Pin To Net: NetName=NetC20_2 Pin=IC5-1
+Added Pin To Net: NetName=NetC21_2 Pin=IC5-2
+Added Pin To Net: NetName=NetC24_2 Pin=IC5-3
+Added Pin To Net: NetName=NetC25_2 Pin=IC5-4
+Added Pin To Net: NetName=AHLB Pin=IC5-5
+Added Pin To Net: NetName=+3V3 Pin=IC5-6
+Added Pin To Net: NetName=TOG Pin=IC5-7
+Added Pin To Net: NetName=LPMB Pin=IC5-8
+Added Pin To Net: NetName=MOT0 Pin=IC5-9
+Added Pin To Net: NetName=GND Pin=IC5-10
+Added Pin To Net: NetName=OD Pin=IC5-11
+Added Pin To Net: NetName=SM Pin=IC5-12
+Added Pin To Net: NetName=NetIC5_13 Pin=IC5-13
+Added Pin To Net: NetName=NetIC5_14 Pin=IC5-14
+Added Pin To Net: NetName=NetIC5_15 Pin=IC5-15
+Added Pin To Net: NetName=NetIC5_16 Pin=IC5-16
+Added Member To Class: ClassName=TTP224 Member=Component IC5 TTP224

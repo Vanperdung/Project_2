@@ -1,0 +1,19 @@
+Removed Pin From Net: NetName=NetC10_1 Pin=J1-2
+Change Component Footprint: Designator=J1 Old Footprint=KF2-5.08 New Footprint=KF6-5
+Change Component Comment : Designator=J1 Old Comment=AC-IN New Comment=KF6
+Change component parameters: Designator = "J1" ("J1"); Footprint = "KF2-5.08"; UniqueID = "\CBZABXFC" ("\CBZABXFC")
+Change component parameters (AddParameter): Name = "ComponentLink1 Description"; Value = "Manufacturer"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "ComponentLink1 URL"; Value = "http://www.we-online.com"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "ComponentLink2 Description"; Value = "Datasheet"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "ComponentLink2 URL"; Value = "http://katalog.we-online.de/em/datasheet/6911337100xx.pdf"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Created By"; Value = "Baojun Chen"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Created Date"; Value = "4-Aug-15"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Manufacturer"; Value = "W¨¹rth Elektronik eiSos GmbH"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "NoPins"; Value = "6"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "PartNo"; Value = "691133710006"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=NetC10_1 Pin=J1-5
+Added Pin To Net: NetName=NetJ1_6 Pin=J1-6
+Added Pin To Net: NetName=NetJ1_6 Pin=R13-2
+Added Net: Name=NetJ1_6
+Added Class: Name=ESP32
+Added Class: Name=TTP224

@@ -1,0 +1,16 @@
+Removed Pin From Net: NetName=L_2 Pin=JP2-1
+Removed Pin From Net: NetName=L_1 Pin=JP2-2
+Removed Pin From Net: NetName=L_4 Pin=JP3-1
+Removed Pin From Net: NetName=L_3 Pin=JP3-2
+Change Component Comment : Designator=R2 Old Comment=1k New Comment=3.3k
+Added Pin To Net: NetName=L_1 Pin=JP2-1
+Added Pin To Net: NetName=L_2 Pin=JP2-2
+Added Pin To Net: NetName=L_3 Pin=JP3-1
+Added Pin To Net: NetName=L_4 Pin=JP3-2
+Added Member To Class: ClassName=Switch Member=Component C11 10uF
+Added Member To Class: ClassName=Switch Member=Component IC4 TPS5430-2
+Added Member To Class: ClassName=Switch Member=Component JP2
+Added Member To Class: ClassName=Switch Member=Component L1 22uH
+Added Member To Class: ClassName=Switch Member=Component Q4 2N2222
+Added Member To Class: ClassName=Switch Member=Component R4 2R/2W
+Added Member To Class: ClassName=Switch Member=Component RL2 Relay_HF32

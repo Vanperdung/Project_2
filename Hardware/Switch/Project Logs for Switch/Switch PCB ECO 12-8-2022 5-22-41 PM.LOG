@@ -1,0 +1,8 @@
+Removed Pin From Net: NetName=N_AC Pin=JP1-1
+Removed Pin From Net: NetName=L_AC Pin=JP1-2
+Removed Pin From Net: NetName=L_1 Pin=JP2-1
+Removed Pin From Net: NetName=L_2 Pin=JP2-2
+Removed Pin From Net: NetName=L_3 Pin=JP3-1
+Removed Pin From Net: NetName=L_4 Pin=JP3-2
+Change Component Designator: OldDesignator=JP4 NewDesignator=JP7
+Added Room: Name=Switch
