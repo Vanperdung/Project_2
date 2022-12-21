@@ -1,0 +1,6 @@
+Removed Pin From Net: NetName=NetC9_1 Pin=J1-1
+Change Component Comment : Designator=C10 Old Comment=0.1uF/275v  New Comment=0.1uF/275v
+Added Pin To Net: NetName=NetC9_1 Pin=J1-2
+Added Pin To Net: NetName=NetJ1_1 Pin=J1-1
+Added Pin To Net: NetName=NetJ1_1 Pin=R9-1
+Added Net: Name=NetJ1_1

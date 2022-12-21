@@ -1,16 +1,18 @@
-#ifndef _LED_H_
+/**
+ * @file led.h
+ * @author Vanperdung (dung.nv382001@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-12-20
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
+#idfnef _LED_H_
 #define _LED_H_
 
-#define LED_STATUS_PIN      GPIO_NUM_2
-#define LED_ON              1
-#define LED_OFF             0
 
-void led_status_init(void);
-void led_onoff_init(void);
-void led_task(void *param);
 
 
 #endif
-
-
-

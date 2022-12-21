@@ -1,2 +1,4 @@
-Record=TopLevelDocument|FileName=ESP32.SchDoc|SheetNumber=2
-Record=NoMainPathDocument|SourceDocument=ESP32.SchDoc|FileName=TTP224.SchDoc|SheetNumber=1
+Record=TopLevelDocument|FileName=Sheet.SchDoc|SheetNumber=1
+Record=SheetSymbol|SourceDocument=Sheet.SchDoc|Designator=U_ESP32|SchDesignator=U_ESP32|FileName=ESP32.SchDoc|SheetNumber=3|SymbolType=Normal|RawFileName=ESP32.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
+Record=SheetSymbol|SourceDocument=Sheet.SchDoc|Designator=U_TPS5430|SchDesignator=U_TPS5430|FileName=TPS5430.SchDoc|SheetNumber=4|SymbolType=Normal|RawFileName=TPS5430.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
+Record=SheetSymbol|SourceDocument=Sheet.SchDoc|Designator=U_TTP224|SchDesignator=U_TTP224|FileName=TTP224.SchDoc|SheetNumber=2|SymbolType=Normal|RawFileName=TTP224.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 

@@ -1,0 +1,18 @@
+Removed Pin From Net: NetName=NetC7_1 Pin=U4-1
+Removed Pin From Net: NetName=GND_AC Pin=U4-4
+Removed Member From Class: ClassName=Power Member=U5
+Change Component Designator: OldDesignator=IC1 NewDesignator=IC2
+Change Component Designator: OldDesignator=IC2 NewDesignator=IC3
+Change Component Designator: OldDesignator=U5 NewDesignator=U4
+Added Component: Designator=IC1(MB6S)
+Added Pin To Net: NetName=NetC7_1 Pin=IC1-1
+Added Pin To Net: NetName=GND_AC Pin=IC1-2
+Change Net Name : Old Net Name=NetIC1_4 New Net Name=NetIC2_4
+Change Net Name : Old Net Name=NetIC2_3 New Net Name=NetIC3_3
+Added Pin To Net: NetName=NetIC1_3 Pin=IC1-3
+Added Pin To Net: NetName=NetIC1_3 Pin=L1-3
+Added Net: Name=NetIC1_3
+Added Pin To Net: NetName=NetIC1_4 Pin=IC1-4
+Added Pin To Net: NetName=NetIC1_4 Pin=L1-1
+Added Net: Name=NetIC1_4
+Added Member To Class: ClassName=Power Member=Component IC3 TL431

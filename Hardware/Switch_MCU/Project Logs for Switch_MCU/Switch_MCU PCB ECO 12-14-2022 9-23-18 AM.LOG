@@ -1,0 +1,18 @@
+Added Pin To Net: NetName=+3.3V Pin=C3-2
+Added Pin To Net: NetName=+3.3V Pin=C4-2
+Added Pin To Net: NetName=+3.3V Pin=IC1-6
+Added Pin To Net: NetName=+3.3V Pin=R5-2
+Added Pin To Net: NetName=+3.3V Pin=R6-2
+Added Pin To Net: NetName=+3.3V Pin=R7-2
+Added Pin To Net: NetName=IO13 Pin=U1-16
+Added Net: Name=IO13
+Added Pin To Net: NetName=IO16 Pin=U1-27
+Added Net: Name=IO16
+Added Pin To Net: NetName=IO17 Pin=U1-28
+Added Net: Name=IO17
+Added Pin To Net: NetName=IO19 Pin=U1-31
+Added Net: Name=IO19
+Added Pin To Net: NetName=IO21 Pin=U1-33
+Added Net: Name=IO21
+Added Pin To Net: NetName=IO22 Pin=U1-36
+Added Net: Name=IO22

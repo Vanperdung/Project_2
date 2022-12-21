@@ -1,0 +1,7 @@
+Removed Member From Class: ClassName=AC Member=NetC3_1
+Removed Member From Class: ClassName=AC Member=NetJP1_1
+Added Pin To Net: NetName=L_AC Pin=JP1-1
+Added Pin To Net: NetName=L_AC Pin=R7-1
+Change Net Name : Old Net Name=NetC3_1 New Net Name=N_AC
+Added Member To Class: ClassName=AC Member=Wire L_AC
+Added Member To Class: ClassName=AC Member=Wire N_AC

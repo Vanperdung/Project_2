@@ -1,0 +1,2 @@
+Phân biệt chức năng của thiết bị khi Provisioning?
+ => How can Provisioner get and parse the Composition Data of nodes through Configuration Client Model?

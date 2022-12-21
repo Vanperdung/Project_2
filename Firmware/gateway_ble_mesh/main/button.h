@@ -1,12 +1,19 @@
+/**
+ * @file button.h
+ * @author Vanperdung (dung.nv382001@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-12-20
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #ifndef _BUTTON_H_
 #define _BUTTON_H_
 
-#define BUTTON_ONOFF_PIN                GPIO_NUM_25
-#define BUTTON_BOOT_PIN                 GPIO_NUM_0
-#define TIME_DOWN_SET                   3000
 
-void button_task(void *param);
+
+
 
 #endif
-
-

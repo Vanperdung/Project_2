@@ -1,0 +1,12 @@
+Added Pin To Net: NetName=+12 Pin=JP1-1
+Added Pin To Net: NetName=+12 Pin=JP1-2
+Added Pin To Net: NetName=GND Pin=JP1-3
+Added Pin To Net: NetName=GND Pin=JP1-4
+Added Pin To Net: NetName=RL1 Pin=JP1-8
+Added Net: Name=RL1
+Added Pin To Net: NetName=RL2 Pin=JP1-7
+Added Net: Name=RL2
+Added Pin To Net: NetName=RL3 Pin=JP1-6
+Added Net: Name=RL3
+Added Pin To Net: NetName=RL4 Pin=JP1-5
+Added Net: Name=RL4

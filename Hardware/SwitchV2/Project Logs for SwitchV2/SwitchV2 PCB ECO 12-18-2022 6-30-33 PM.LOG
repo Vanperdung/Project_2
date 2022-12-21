@@ -1,0 +1,7 @@
+Change Component Designator: OldDesignator=U1 NewDesignator=U2
+Added Pin To Net: NetName=N_AC Pin=JP2-1
+Added Member To Class: ClassName=Switch Member=Component IC1 TNY264
+Added Member To Class: ClassName=Switch Member=Component IC2 TL431
+Added Member To Class: ClassName=Switch Member=Component IC3 TPS5430-2
+Added Member To Class: ClassName=Switch Member=Component U1 Diode Bridge Flate
+Added Member To Class: ClassName=Switch Member=Component U2 OPTO PC817 SMD
