@@ -18,7 +18,6 @@
 #include "freertos/queue.h"
 #include "freertos/ringbuf.h"
 
-#include "esp_log.h"
 #include "nvs_flash.h"
 
 #include "esp_ble_mesh_defs.h"
@@ -27,8 +26,11 @@
 #include "esp_ble_mesh_networking_api.h"
 #include "esp_ble_mesh_config_model_api.h"
 #include "esp_ble_mesh_generic_model_api.h"
-
-#include "ble_mesh_example_init.h"
+#include "esp_log.h"
+#include "esp_bt.h"
+#include "esp_bt_main.h"
+#include "esp_gap_ble_api.h"
+#include "esp_bt_device.h"
 
 #include "driver/gpio.h"
 
@@ -45,8 +47,13 @@
 #define LED_ON 0x1
 #define LED_OFF 0x0
 
+#define MODEL_APP_BIND_BIT BIT0
+#define GET_STATE_BIT BIT1
+
 static const char *TAG = "MAIN";
 static uint8_t dev_uuid[16];
+
+EventGroupHandle_t mesh_evt_group;
 
 typedef struct
 {
@@ -149,6 +156,60 @@ static esp_ble_mesh_prov_t provision = {
     .flags = 0x00,
     .iv_index = 0x00,
 };
+
+void mesh_evt_task(void *param);
+
+void ble_mesh_get_dev_uuid(uint8_t *dev_uuid)
+{
+    if (dev_uuid == NULL)
+    {
+        ESP_LOGE(TAG, "%s, Invalid device uuid", __func__);
+        return;
+    }
+
+    /* Copy device address to the device uuid with offset equals to 2 here.
+     * The first two bytes is used for matching device uuid by Provisioner.
+     * And using device address here is to avoid using the same device uuid
+     * by different unprovisioned devices.
+     */
+    memcpy(dev_uuid + 2, esp_bt_dev_get_address(), BD_ADDR_LEN);
+}
+
+esp_err_t bluetooth_init(void)
+{
+    esp_err_t ret;
+
+    ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ret = esp_bt_controller_init(&bt_cfg);
+    if (ret)
+    {
+        ESP_LOGE(TAG, "%s initialize controller failed", __func__);
+        return ret;
+    }
+
+    ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
+    if (ret)
+    {
+        ESP_LOGE(TAG, "%s enable controller failed", __func__);
+        return ret;
+    }
+    ret = esp_bluedroid_init();
+    if (ret)
+    {
+        ESP_LOGE(TAG, "%s init bluetooth failed", __func__);
+        return ret;
+    }
+    ret = esp_bluedroid_enable();
+    if (ret)
+    {
+        ESP_LOGE(TAG, "%s enable bluetooth failed", __func__);
+        return ret;
+    }
+
+    return ret;
+}
 
 esp_err_t ble_mesh_store_node_info_in_flash(node_info_t *comp)
 {
@@ -349,17 +410,26 @@ esp_err_t ble_mesh_onoff_get_state(esp_ble_mesh_client_common_param_t *common, u
     if (err)
     {
         ESP_LOGE(TAG, "%s: Generic OnOff Get failed", __func__);
-        return ESP_NOT_OK;
+        return ESP_FAIL;
     }
     return ESP_OK;
 }
 
-esp_err_t ble_mesh_app_bind(esp_ble_mesh_client_common_param_t *common, node_info_t *node, esp_ble_mesh_model_t *model)
+esp_err_t ble_mesh_app_bind(esp_ble_mesh_client_common_param_t *common, node_info_t *node, uint16_t unicast_elem, esp_ble_mesh_model_t *model)
 {
     esp_ble_mesh_cfg_client_set_state_t set_state = {0};
-    ble_mesh_set_msg_common(common, unicast_elem, model, ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND);
-    set_state.model_app_bind.element_addr = node->unicast_node;
+    ble_mesh_set_msg_common(common, node->unicast_node, model, ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND);
+    set_state.model_app_bind.element_addr = unicast_elem;
     set_state.model_app_bind.model_app_idx = prov_key.app_idx;
+    set_state.model_app_bind.model_id = ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV;
+    set_state.model_app_bind.company_id = ESP_BLE_MESH_CID_NVAL;
+    esp_err_t err = esp_ble_mesh_config_client_set_state(&common, &set_state);
+    if (err)
+    {
+        ESP_LOGE(TAG, "%s: Config Model App Bind failed", __func__);
+        return ESP_FAIL;
+    }
+    return ESP_OK;
 }
 
 static esp_err_t prov_complete(int node_idx, const esp_ble_mesh_octet16_t uuid,
@@ -587,17 +657,8 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
                 }
             }
             ESP_LOGW(TAG, "**************************************************************");
-            esp_ble_mesh_cfg_client_set_state_t set_state = {0};
-            ble_mesh_set_msg_common(&common, node->unicast_node, config_client.model, ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD);
-            set_state.app_key_add.net_idx = prov_key.net_idx;
-            set_state.app_key_add.app_idx = prov_key.app_idx;
-            memcpy(set_state.app_key_add.app_key, prov_key.app_key, 16);
-            err = esp_ble_mesh_config_client_set_state(&common, &set_state);
-            if (err)
-            {
-                ESP_LOGE(TAG, "%s: Config AppKey Add failed", __func__);
-                return;
-            }
+            xTaskCreate(&mesh_evt_task, "mesh_evt_task", 4096, (void *)node, 9, NULL);
+            xEventGroupSetBits(mesh_evt_group, MODEL_APP_BIND_BIT);
             break;
         }
         default:
@@ -879,6 +940,31 @@ static esp_err_t ble_mesh_init(void)
     return err;
 }
 
+void mesh_evt_task(void *param)
+{
+    EventBits_t evt_bit;
+    node_info_t *node = (node_info_t *)param;
+    uint16_t unicast_elem = node->unicast_node;
+    uint8_t elem_num = node->elem_num;
+    while (1)
+    {
+        evt_bits = xEventGroupWaitBits(mesh_evt_group, MODEL_APP_BIND_BIT | GET_STATE_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
+        if (evt_bit & MODEL_APP_BIND_BIT)
+        {
+            esp_ble_mesh_client_common_param_t common;
+            if(elem)
+            ble_mesh_app_bind(&common, node, unicast_elem + (node->elem_num - (elem_num--)), config_client.model);
+        }
+        else if (evt_bit & GET_STATE_BIT)
+        {
+        }
+        else
+        {
+            vTaskDelay(10 / portTICK_RATE_MS);
+        }
+    }
+}
+
 void button_task(void *param)
 {
     TickType_t bt_tick = 0;
@@ -965,6 +1051,7 @@ void app_main(void)
     {
         ESP_LOGE(TAG, "Bluetooth mesh init failed (err %d)", err);
     }
-
+    mesh_evt_group = xEventGroupCreate();
+    xTaskCreate(&mesh_evt_task, "mesh_evt_task", 4096, NULL, 10, NULL);
     xTaskCreate(&button_task, "button_task", 4096, NULL, 10, NULL);
 }
