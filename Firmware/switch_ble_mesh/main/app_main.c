@@ -88,8 +88,8 @@ static esp_ble_mesh_cfg_srv_t config_server = {
 
 ESP_BLE_MESH_MODEL_PUB_DEFINE(onoff_pub_0, 2 + 3, ROLE_NODE);
 static esp_ble_mesh_gen_onoff_srv_t onoff_server_0 = {
-    .rsp_ctrl.get_auto_rsp = ESP_BLE_MESH_SERVER_AUTO_RSP,
-    .rsp_ctrl.set_auto_rsp = ESP_BLE_MESH_SERVER_AUTO_RSP,
+    .rsp_ctrl.get_auto_rsp = ESP_BLE_MESH_SERVER_RSP_BY_APP,
+    .rsp_ctrl.set_auto_rsp = ESP_BLE_MESH_SERVER_RSP_BY_APP,
 };
 
 ESP_BLE_MESH_MODEL_PUB_DEFINE(onoff_pub_1, 2 + 3, ROLE_NODE);
@@ -258,6 +258,7 @@ static void handle_gen_onoff_msg(esp_ble_mesh_model_t *model,
             /* TODO: Delay and state transition */
             srv->state.onoff = set->onoff;
         }
+        esp_ble_mesh_server_model_send_msg(model, ctx, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS, sizeof(srv->state.onoff), &srv->state.onoff);
         break;
     default:
         break;

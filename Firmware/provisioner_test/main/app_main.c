@@ -48,14 +48,14 @@ typedef struct
     uint8_t uuid[16];
     uint16_t unicast;
     uint8_t elem_num;
-    uint8_t onoff;
 } esp_ble_mesh_node_info_t;
+
+esp_ble_mesh_elem_t
 
 static esp_ble_mesh_node_info_t nodes[CONFIG_BLE_MESH_MAX_PROV_NODES] = {
     [0 ...(CONFIG_BLE_MESH_MAX_PROV_NODES - 1)] = {
         .unicast = ESP_BLE_MESH_ADDR_UNASSIGNED,
         .elem_num = 0,
-        .onoff = LED_OFF,
     },
 };
 

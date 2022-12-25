@@ -1,0 +1,24 @@
+Removed Pin From Net: NetName=GND Pin=C10-1
+Removed Pin From Net: NetName=+12 Pin=C10-2
+Removed Pin From Net: NetName=GND Pin=C11-1
+Removed Pin From Net: NetName=+12 Pin=C11-2
+Removed Pin From Net: NetName=GND Pin=C12-2
+Removed Pin From Net: NetName=GND Pin=C13-2
+Removed Pin From Net: NetName=GND Pin=D7-1
+Removed Pin From Net: NetName=GND Pin=IC3-6
+Removed Pin From Net: NetName=+12 Pin=IC3-7
+Removed Pin From Net: NetName=GND Pin=IC3-9
+Removed Pin From Net: NetName=+12 Pin=R18-1
+Removed Pin From Net: NetName=GND Pin=R20-1
+Removed Member From Class: ClassName=Switch Member=C9
+Removed Member From Class: ClassName=Switch Member=C10
+Removed Member From Class: ClassName=Switch Member=C11
+Removed Member From Class: ClassName=Switch Member=C12
+Removed Member From Class: ClassName=Switch Member=C13
+Removed Member From Class: ClassName=Switch Member=D7
+Removed Member From Class: ClassName=Switch Member=IC3
+Removed Member From Class: ClassName=Switch Member=L3
+Removed Member From Class: ClassName=Switch Member=R18
+Removed Member From Class: ClassName=Switch Member=R19
+Removed Member From Class: ClassName=Switch Member=R20
+Added Room: Name=Switch
