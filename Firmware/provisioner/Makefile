@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := hub_ble
+PROJECT_NAME := provisioner
 
 COMPONENT_ADD_INCLUDEDIRS := components/include
 
