@@ -48,18 +48,19 @@
 #define LED_OFF 0x0
 
 #define MODEL_APP_BIND_BIT BIT0
-#define GET_STATE_BIT BIT1
+#define MODEL_APP_BIND_REPEAT_BIT BIT1
+#define GET_STATE_REPEAT_BIT BIT2
+#define GET_STATE_BIT BIT3
 
 static const char *TAG = "MAIN";
 static uint8_t dev_uuid[16];
 
 EventGroupHandle_t mesh_evt_group;
-
+TaskHandle_t mesh_evt_handle; 
 typedef struct
 {
     uint16_t model_id;
     uint8_t model_name[20];
-    // esp_ble_mesh_generic_server_recv_set_msg_t state;
     uint8_t onoff_state;
 } model_info_t;
 
@@ -83,12 +84,14 @@ typedef struct
     uint16_t crpl;
     uint16_t feature;
     elem_info_t elem[10];
+    bool prov;
 } node_info_t;
 
 node_info_t nodes[MAXIMUM_NODE] = {
     [0 ... MAXIMUM_NODE - 1] = {
         .unicast_node = ESP_BLE_MESH_ADDR_UNASSIGNED,
         .elem_num = 0,
+        .prov = false,
     },
 };
 
@@ -266,6 +269,7 @@ esp_err_t ble_mesh_store_node_info(const uint8_t uuid[16], uint16_t unicast, uin
         if (!memcmp(nodes[i].uuid, uuid, 16))
         {
             ESP_LOGW(TAG, "%s: reprovisioned device 0x%04x", __func__, unicast);
+            nodes[i].prov = false;
             nodes[i].unicast_node = unicast;
             nodes[i].elem_num = elem_num;
             for (int j = 0; j < elem_num; j++)
@@ -280,6 +284,7 @@ esp_err_t ble_mesh_store_node_info(const uint8_t uuid[16], uint16_t unicast, uin
     {
         if (nodes[i].unicast_node == ESP_BLE_MESH_ADDR_UNASSIGNED)
         {
+            nodes[i].prov = false;
             memcpy(nodes[i].uuid, uuid, 16);
             nodes[i].unicast_node = unicast;
             nodes[i].elem_num = elem_num;
@@ -415,6 +420,11 @@ esp_err_t ble_mesh_onoff_get_state(esp_ble_mesh_client_common_param_t *common, u
     return ESP_OK;
 }
 
+esp_err_t ble_mesh_onoff_set_state(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem, esp_ble_mesh_model_t *onoff_client_model)
+{
+    return ESP_OK;
+}
+
 esp_err_t ble_mesh_app_bind(esp_ble_mesh_client_common_param_t *common, node_info_t *node, uint16_t unicast_elem, esp_ble_mesh_model_t *model)
 {
     esp_ble_mesh_cfg_client_set_state_t set_state = {0};
@@ -423,7 +433,7 @@ esp_err_t ble_mesh_app_bind(esp_ble_mesh_client_common_param_t *common, node_inf
     set_state.model_app_bind.model_app_idx = prov_key.app_idx;
     set_state.model_app_bind.model_id = ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV;
     set_state.model_app_bind.company_id = ESP_BLE_MESH_CID_NVAL;
-    esp_err_t err = esp_ble_mesh_config_client_set_state(&common, &set_state);
+    esp_err_t err = esp_ble_mesh_config_client_set_state(common, &set_state);
     if (err)
     {
         ESP_LOGE(TAG, "%s: Config Model App Bind failed", __func__);
@@ -617,8 +627,8 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
     opcode = param->params->opcode;
     addr = param->params->ctx.addr;
 
-    ESP_LOGI(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
-             __func__, param->error_code, event, param->params->ctx.addr, opcode);
+    // ESP_LOGI(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
+    //          __func__, param->error_code, event, param->params->ctx.addr, opcode);
 
     if (param->error_code)
     {
@@ -657,8 +667,17 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
                 }
             }
             ESP_LOGW(TAG, "**************************************************************");
-            xTaskCreate(&mesh_evt_task, "mesh_evt_task", 4096, (void *)node, 9, NULL);
-            xEventGroupSetBits(mesh_evt_group, MODEL_APP_BIND_BIT);
+            esp_ble_mesh_cfg_client_set_state_t set_state = {0};
+            ble_mesh_set_msg_common(&common, node->unicast_node, config_client.model, ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD);
+            set_state.app_key_add.net_idx = prov_key.net_idx;
+            set_state.app_key_add.app_idx = prov_key.app_idx;
+            memcpy(set_state.app_key_add.app_key, prov_key.app_key, 16);
+            err = esp_ble_mesh_config_client_set_state(&common, &set_state);
+            if (err)
+            {
+                ESP_LOGE(TAG, "%s: Config AppKey Add failed", __func__);
+                return;
+            }
             break;
         }
         default:
@@ -671,23 +690,22 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:
         {
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD");
-            esp_ble_mesh_cfg_client_set_state_t set_state = {0};
-            ble_mesh_set_msg_common(&common, node->unicast_node, config_client.model, ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND);
-            set_state.model_app_bind.element_addr = node->unicast_node;
-            set_state.model_app_bind.model_app_idx = prov_key.app_idx;
-            set_state.model_app_bind.model_id = ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV;
-            set_state.model_app_bind.company_id = ESP_BLE_MESH_CID_NVAL;
-            err = esp_ble_mesh_config_client_set_state(&common, &set_state);
-            if (err)
-            {
-                ESP_LOGE(TAG, "%s: Config Model App Bind failed", __func__);
-                return;
-            }
+            xTaskCreate(&mesh_evt_task, "mesh_evt_task", 4096, (void *)node, 9, &mesh_evt_handle);
+            xEventGroupSetBits(mesh_evt_group, MODEL_APP_BIND_BIT);
             break;
         }
         case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
         {
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND");
+            ESP_LOGI(TAG, "Element Unicast Address :0x%04x", param->status_cb.model_app_status.element_addr);
+            if(node->unicast_node + (uint16_t)node->elem_num > param->status_cb.model_app_status.element_addr + 1)
+            {
+                xEventGroupSetBits(mesh_evt_group, MODEL_APP_BIND_BIT);
+            }
+            else if(node->unicast_node + (uint16_t)node->elem_num == param->status_cb.model_app_status.element_addr + 1)
+            {
+                xEventGroupSetBits(mesh_evt_group, GET_STATE_BIT);
+            }
             break;
         }
         default:
@@ -740,17 +758,9 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         }
         case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
         {
-            esp_ble_mesh_cfg_client_set_state_t set_state = {0};
-            ble_mesh_set_msg_common(&common, node->unicast_node, config_client.model, ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND);
-            set_state.model_app_bind.element_addr = node->unicast_node;
-            set_state.model_app_bind.model_app_idx = prov_key.app_idx;
-            set_state.model_app_bind.model_id = ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV;
-            set_state.model_app_bind.company_id = ESP_BLE_MESH_CID_NVAL;
-            err = esp_ble_mesh_config_client_set_state(&common, &set_state);
-            if (err)
+            if(node->prov == false)
             {
-                ESP_LOGE(TAG, "%s: Config Model App Bind failed", __func__);
-                return;
+                xEventGroupSetBits(mesh_evt_group, MODEL_APP_BIND_REPEAT_BIT);
             }
             break;
         }
@@ -767,11 +777,9 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
 static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t event,
                                        esp_ble_mesh_generic_client_cb_param_t *param)
 {
-    esp_ble_mesh_client_common_param_t common = {0};
     node_info_t *node = NULL;
     uint32_t opcode;
     uint16_t addr;
-    esp_err_t err;
 
     opcode = param->params->opcode;
     addr = param->params->ctx.addr;
@@ -799,7 +807,6 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         {
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET:
         {
-            // esp_ble_mesh_generic_client_set_state_t set_state = {0};
             model_info_t *onoff_model = NULL;
             onoff_model = ble_mesh_get_model_info_with_model_id(param->params->ctx.addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
             if (!onoff_model)
@@ -808,18 +815,17 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
                 return;
             }
             onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
-            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET onoff: 0x%02x", onoff_model->onoff_state);
-            /* After Generic OnOff Status for Generic OnOff Get is received, Generic OnOff Set will be sent */
-            // example_ble_mesh_set_msg_common(&common, node, onoff_client.model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET);
-            // set_state.onoff_set.op_en = false;
-            // set_state.onoff_set.onoff = !node->onoff;
-            // set_state.onoff_set.tid = 0;
-            // err = esp_ble_mesh_generic_client_set_state(&common, &set_state);
-            // if (err)
-            // {
-            //     ESP_LOGE(TAG, "%s: Generic OnOff Set failed", __func__);
-            //     return;
-            // }
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET unicast: 0x%04x, onoff: 0x%02x", addr, onoff_model->onoff_state);
+            if(node->prov == false && node->unicast_node + (uint16_t)node->elem_num > addr + 1)
+            {
+                xEventGroupSetBits(mesh_evt_group, GET_STATE_BIT);
+            }
+            else if(node->prov == false && node->unicast_node + (uint16_t)node->elem_num == addr + 1)
+            {
+                ESP_LOGW(TAG, "********************** Provision done **********************");
+                node->prov = true;
+                vTaskDelete(mesh_evt_handle);
+            }
             break;
         }
         default:
@@ -839,7 +845,7 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
                 return;
             }
             onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
-            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET onoff: 0x%02x", onoff_model->onoff_state);
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET unicast: 0x%04x, onoff: 0x%02x", addr, onoff_model->onoff_state);
             break;
         }
         default:
@@ -854,28 +860,15 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         {
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET:
         {
-            model_info_t *onoff_model = NULL;
-            onoff_model = ble_mesh_get_model_info_with_model_id(param->params->ctx.addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
-            if (!onoff_model)
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET TIMEOUT unicast: 0x%04x", addr);
+            if(node->prov == false)
             {
-                ESP_LOGE(TAG, "%s: Get model info failed", __func__);
-                return;
+                xEventGroupSetBits(mesh_evt_group, GET_STATE_REPEAT_BIT);
             }
-            onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
-            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET onoff: 0x%02x", onoff_model->onoff_state);
             break;
         }
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET:
-        {
-            model_info_t *onoff_model = NULL;
-            onoff_model = ble_mesh_get_model_info_with_model_id(param->params->ctx.addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
-            if (!onoff_model)
-            {
-                ESP_LOGE(TAG, "%s: Get model info failed", __func__);
-                return;
-            }
-            onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
-            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET onoff: 0x%02x", onoff_model->onoff_state);
+        {   
             break;
         }
         default:
@@ -886,12 +879,6 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         ESP_LOGE(TAG, "Not a generic client status message event");
         break;
     }
-}
-
-static void ble_mesh_set_onoff_state(esp_ble_mesh_client_common_param_t *common,
-                                     node_info_t *node,
-                                     esp_ble_mesh_model_t *model, uint32_t opcode)
-{
 }
 
 static esp_err_t ble_mesh_init(void)
@@ -944,19 +931,34 @@ void mesh_evt_task(void *param)
 {
     EventBits_t evt_bit;
     node_info_t *node = (node_info_t *)param;
-    uint16_t unicast_elem = node->unicast_node;
-    uint8_t elem_num = node->elem_num;
+    uint16_t model_app_bind_addr = node->unicast_node - 1;
+    uint16_t get_state_addr = node->unicast_node - 1;
     while (1)
     {
-        evt_bits = xEventGroupWaitBits(mesh_evt_group, MODEL_APP_BIND_BIT | GET_STATE_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
+        evt_bit = xEventGroupWaitBits(mesh_evt_group, MODEL_APP_BIND_BIT | MODEL_APP_BIND_REPEAT_BIT | GET_STATE_REPEAT_BIT | GET_STATE_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
         if (evt_bit & MODEL_APP_BIND_BIT)
         {
+            model_app_bind_addr++;
             esp_ble_mesh_client_common_param_t common;
-            if(elem)
-            ble_mesh_app_bind(&common, node, unicast_elem + (node->elem_num - (elem_num--)), config_client.model);
+            ble_mesh_app_bind(&common, node, model_app_bind_addr, config_client.model);
+        }
+        else if(evt_bit & MODEL_APP_BIND_REPEAT_BIT)
+        {
+            // ESP_LOGW(TAG, "Model app bind repeat");
+            esp_ble_mesh_client_common_param_t common;
+            ble_mesh_app_bind(&common, node, model_app_bind_addr, config_client.model);
         }
         else if (evt_bit & GET_STATE_BIT)
         {
+            get_state_addr++;
+            esp_ble_mesh_client_common_param_t common;
+            ble_mesh_onoff_get_state(&common, get_state_addr, onoff_client.model);
+        }
+        else if(evt_bit & GET_STATE_REPEAT_BIT)
+        {
+            // ESP_LOGW(TAG, "Get state repeat");
+            esp_ble_mesh_client_common_param_t common;
+            ble_mesh_onoff_get_state(&common, get_state_addr, onoff_client.model);
         }
         else
         {
@@ -1052,6 +1054,5 @@ void app_main(void)
         ESP_LOGE(TAG, "Bluetooth mesh init failed (err %d)", err);
     }
     mesh_evt_group = xEventGroupCreate();
-    xTaskCreate(&mesh_evt_task, "mesh_evt_task", 4096, NULL, 10, NULL);
     xTaskCreate(&button_task, "button_task", 4096, NULL, 10, NULL);
 }

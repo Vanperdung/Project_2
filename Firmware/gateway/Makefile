@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := provisioner_user
+PROJECT_NAME := gateway
 
 COMPONENT_ADD_INCLUDEDIRS := components/include
 
