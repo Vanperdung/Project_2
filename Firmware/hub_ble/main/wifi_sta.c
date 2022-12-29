@@ -74,6 +74,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
 		ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
 		ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
         status = NORMAL_MODE;
+        mqtt_client_sta();
 	}
 }
 
