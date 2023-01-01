@@ -60,7 +60,6 @@ _switch_num switch_num;
 _switch_state switch_state[SWITCH_TOTAL] = {
     [SWITCH_NUM_0] =
 
-    
         {
             .pin = GPIO_NUM_2,
             .name = "SWITCH_0",
@@ -376,6 +375,11 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                      param->value.state_change.mod_sub_add.company_id,
                      param->value.state_change.mod_sub_add.model_id);
             break;
+        case ESP_BLE_MESH_MODEL_OP_HEARTBEAT_PUB_SET:
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_HEARTBEAT_PUB_SET");
+            break;
+        case ESP_BLE_MESH_MODEL_OP_HEARTBEAT_SUB_SET:
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_HEARTBEAT_SUB_SET");
         default:
             break;
         }
@@ -397,12 +401,12 @@ static esp_err_t ble_mesh_init(void)
         return err;
     }
 
-    err = esp_ble_mesh_set_unprovisioned_device_name("SWITCH 4");
-    if (err != ESP_OK)
-    {
-        ESP_LOGE(TAG, "Failed to initialize device name (err %d)", err);
-        return err;
-    }
+    // err = esp_ble_mesh_set_unprovisioned_device_name("SWITCH 4");
+    // if (err != ESP_OK)
+    // {
+    //     ESP_LOGE(TAG, "Failed to initialize device name (err %d)", err);
+    //     return err;
+    // }
     err = esp_ble_mesh_node_prov_enable(ESP_BLE_MESH_PROV_ADV | ESP_BLE_MESH_PROV_GATT);
     if (err != ESP_OK)
     {

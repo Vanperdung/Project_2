@@ -1,0 +1,11 @@
+Change Component Designator: OldDesignator=L5 NewDesignator=L1
+Change Component Designator: OldDesignator=R11 NewDesignator=R3
+Change Component Designator: OldDesignator=R12 NewDesignator=R4
+Change Component Designator: OldDesignator=R13 NewDesignator=R5
+Change Component Designator: OldDesignator=R14 NewDesignator=R6
+Change Component Designator: OldDesignator=R15 NewDesignator=R7
+Change Component Designator: OldDesignator=R16 NewDesignator=R8
+Change Component Designator: OldDesignator=R17 NewDesignator=R9
+Change Component Designator: OldDesignator=R18 NewDesignator=R10
+Change Component Designator: OldDesignator=R19 NewDesignator=R11
+Added Pin To Net: NetName=IO25 Pin=U1-10

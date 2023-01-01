@@ -1,0 +1,5 @@
+Added Pin To Net: NetName=IO25 Pin=U1-10
+Added Pin To Net: NetName=RXD Pin=U1-34
+Added Net: Name=RXD
+Added Pin To Net: NetName=TXD Pin=U1-35
+Added Net: Name=TXD

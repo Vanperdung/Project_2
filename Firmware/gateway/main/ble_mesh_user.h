@@ -31,6 +31,7 @@
 #define APP_KEY_OCTET 0x12
 #define ON 0x1
 #define OFF 0x0
+#define UNPROV_DEV_QUEUE_SIZE 10;
 
 typedef struct
 {
@@ -62,7 +63,20 @@ typedef struct
     bool prov;
 } node_info_t;
 
-void mesh_evt_task(void *param);
+typedef enum
+{
+    NONE_EVT,
+    MODEL_APP_BIND_EVT,
+    MODEL_GET_STATE_EVT,
+} prov_event_t;
+
+typedef struct 
+{
+    node_info_t *node;
+    prov_event_t evt;
+} prov_node_info_t;
+
+void prov_dev_task(void *param);
 esp_err_t bluetooth_init(void);
 void ble_mesh_get_dev_uuid(uint8_t *dev_uuid);
 esp_err_t ble_mesh_init(void);

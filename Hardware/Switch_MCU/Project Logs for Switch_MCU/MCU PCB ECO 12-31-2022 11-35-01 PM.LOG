@@ -1,0 +1,16 @@
+Removed Pin From Net: NetName=IO19 Pin=JP1-5
+Removed Pin From Net: NetName=IO18 Pin=JP1-6
+Removed Pin From Net: NetName=IO17 Pin=JP1-7
+Removed Pin From Net: NetName=IO16 Pin=JP1-8
+Removed Pin From Net: NetName=IO19 Pin=LED1-1
+Removed Pin From Net: NetName=IO18 Pin=LED2-1
+Removed Pin From Net: NetName=IO17 Pin=LED3-1
+Removed Pin From Net: NetName=IO16 Pin=LED4-1
+Added Pin To Net: NetName=IO16 Pin=JP1-5
+Added Pin To Net: NetName=IO17 Pin=JP1-6
+Added Pin To Net: NetName=IO18 Pin=JP1-7
+Added Pin To Net: NetName=IO19 Pin=JP1-8
+Added Pin To Net: NetName=IO16 Pin=LED1-1
+Added Pin To Net: NetName=IO17 Pin=LED2-1
+Added Pin To Net: NetName=IO18 Pin=LED3-1
+Added Pin To Net: NetName=IO19 Pin=LED4-1

@@ -1,0 +1,66 @@
+Removed Pin From Net: NetName=GND Pin=B1-1
+Removed Pin From Net: NetName=GND Pin=B2-1
+Removed Pin From Net: NetName=GND Pin=B3-1
+Removed Pin From Net: NetName=+3.3V Pin=C3-2
+Removed Pin From Net: NetName=+3.3V Pin=C4-2
+Removed Pin From Net: NetName=GND Pin=C7-2
+Removed Pin From Net: NetName=GND Pin=C8-2
+Removed Pin From Net: NetName=GND Pin=C9-2
+Removed Pin From Net: NetName=GND Pin=C10-2
+Removed Pin From Net: NetName=+3.3V Pin=C11-1
+Removed Pin From Net: NetName=GND Pin=C11-2
+Removed Pin From Net: NetName=+3.3V Pin=C12-1
+Removed Pin From Net: NetName=GND Pin=C12-2
+Removed Pin From Net: NetName=+3.3V Pin=C16-1
+Removed Pin From Net: NetName=+3.3V Pin=C17-1
+Removed Pin From Net: NetName=+3.3V Pin=IC1-6
+Removed Pin From Net: NetName=GND Pin=JP1-3
+Removed Pin From Net: NetName=GND Pin=JP1-4
+Removed Pin From Net: NetName=+3.3V Pin=L5-2
+Removed Pin From Net: NetName=EN Pin=Q1-3
+Removed Pin From Net: NetName=IO0 Pin=Q2-3
+Removed Pin From Net: NetName=+3.3V Pin=R5-2
+Removed Pin From Net: NetName=+3.3V Pin=R6-2
+Removed Pin From Net: NetName=+3.3V Pin=R7-2
+Removed Pin From Net: NetName=GND Pin=R18-2
+Removed Pin From Net: NetName=GND Pin=R19-2
+Removed Pin From Net: NetName=GND Pin=R20-2
+Removed Pin From Net: NetName=GND Pin=R21-2
+Removed Pin From Net: NetName=+3.3V Pin=R25-2
+Removed Pin From Net: NetName=GND Pin=U1-1
+Removed Pin From Net: NetName=GND Pin=U2-1
+Removed Pin From Net: NetName=CH340_TXD Pin=U2-2
+Removed Pin From Net: NetName=CH340_RXD Pin=U2-3
+Removed Pin From Net: NetName=+3.3V Pin=U2-4
+Removed Pin From Net: NetName=+3.3V Pin=U2-16
+Removed Pin From Net: NetName=GND Pin=U3-1
+Removed Pin From Net: NetName=+3.3V Pin=U3-2
+Removed Pin From Net: NetName=+3.3V Pin=U3-2
+Removed Pin From Net: NetName=GND Pin=USB1-5
+Removed Pin From Net: NetName=GND Pin=USB1-5
+Removed Pin From Net: NetName=GND Pin=USB1-5
+Removed Pin From Net: NetName=GND Pin=USB1-5
+Removed Pin From Net: NetName=GND Pin=USB1-5
+Removed Pin From Net: NetName=GND Pin=USB1-5
+Removed Pin From Net: NetName=GND Pin=USB1-5
+Removed Member From Class: ClassName=U_ESP32 Member=C9
+Removed Member From Class: ClassName=U_ESP32 Member=C10
+Removed Member From Class: ClassName=U_ESP32 Member=C11
+Removed Member From Class: ClassName=U_ESP32 Member=C12
+Removed Member From Class: ClassName=U_ESP32 Member=Q1
+Removed Member From Class: ClassName=U_ESP32 Member=Q2
+Removed Member From Class: ClassName=U_ESP32 Member=R22
+Removed Member From Class: ClassName=U_ESP32 Member=R23
+Removed Member From Class: ClassName=U_ESP32 Member=U2
+Removed Member From Class: ClassName=U_ESP32 Member=U3
+Removed Member From Class: ClassName=U_ESP32 Member=USB1
+Change Component Designator: OldDesignator=C13 NewDesignator=C9
+Change Component Designator: OldDesignator=C14 NewDesignator=C10
+Change Component Designator: OldDesignator=C15 NewDesignator=C11
+Change Component Designator: OldDesignator=C16 NewDesignator=C12
+Change Component Designator: OldDesignator=C17 NewDesignator=C13
+Change Component Designator: OldDesignator=R24 NewDesignator=R22
+Change Component Designator: OldDesignator=R25 NewDesignator=R23
+Change Component Designator: OldDesignator=R26 NewDesignator=R24
+Change Net Name : Old Net Name=NetC13_1 New Net Name=NetC9_1
+Change Net Name : Old Net Name=NetC13_2 New Net Name=NetC9_2

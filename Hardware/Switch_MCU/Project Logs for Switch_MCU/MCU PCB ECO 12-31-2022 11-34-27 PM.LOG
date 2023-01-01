@@ -1,0 +1,28 @@
+Removed Pin From Net: NetName=IO16 Pin=IC1-13
+Removed Pin From Net: NetName=IO17 Pin=IC1-14
+Removed Pin From Net: NetName=IO18 Pin=IC1-15
+Removed Pin From Net: NetName=IO19 Pin=IC1-16
+Removed Pin From Net: NetName=IO16 Pin=R7-1
+Removed Pin From Net: NetName=IO17 Pin=R8-1
+Removed Pin From Net: NetName=IO18 Pin=R9-1
+Removed Pin From Net: NetName=IO19 Pin=R10-1
+Added Pin To Net: NetName=IO23 Pin=IC1-14
+Added Pin To Net: NetName=IO22 Pin=IC1-15
+Added Pin To Net: NetName=IO21 Pin=IC1-16
+Added Pin To Net: NetName=IO19 Pin=JP1-5
+Added Pin To Net: NetName=IO18 Pin=JP1-6
+Added Pin To Net: NetName=IO17 Pin=JP1-7
+Added Pin To Net: NetName=IO16 Pin=JP1-8
+Added Pin To Net: NetName=IO19 Pin=LED1-1
+Added Pin To Net: NetName=IO18 Pin=LED2-1
+Added Pin To Net: NetName=IO17 Pin=LED3-1
+Added Pin To Net: NetName=IO16 Pin=LED4-1
+Added Pin To Net: NetName=IO23 Pin=R8-1
+Added Pin To Net: NetName=IO22 Pin=R9-1
+Added Pin To Net: NetName=IO21 Pin=R10-1
+Added Pin To Net: NetName=NetIC1_13 Pin=IC1-13
+Added Pin To Net: NetName=NetIC1_13 Pin=R7-1
+Added Pin To Net: NetName=NetIC1_13 Pin=U1-10
+Added Net: Name=NetIC1_13
+Added Room: Name=ESP32
+Added Room: Name=TPS5430

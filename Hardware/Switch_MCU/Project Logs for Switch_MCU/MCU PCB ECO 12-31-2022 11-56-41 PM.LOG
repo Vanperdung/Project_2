@@ -1,0 +1,18 @@
+Removed Pin From Net: NetName=IO23 Pin=IC1-14
+Removed Pin From Net: NetName=IO22 Pin=IC1-15
+Removed Pin From Net: NetName=IO21 Pin=IC1-16
+Removed Pin From Net: NetName=IO23 Pin=R8-1
+Removed Pin From Net: NetName=IO22 Pin=R9-1
+Removed Pin From Net: NetName=IO21 Pin=R10-1
+Added Pin To Net: NetName=IO23 Pin=IC1-13
+Added Pin To Net: NetName=IO22 Pin=IC1-14
+Added Pin To Net: NetName=IO21 Pin=IC1-15
+Added Pin To Net: NetName=IO23 Pin=R7-1
+Added Pin To Net: NetName=IO22 Pin=R8-1
+Added Pin To Net: NetName=IO21 Pin=R9-1
+Added Pin To Net: NetName=IO4 Pin=IC1-16
+Added Pin To Net: NetName=IO4 Pin=R10-1
+Added Pin To Net: NetName=IO4 Pin=U1-26
+Added Net: Name=IO4
+Added Pin To Net: NetName=IO25 Pin=U1-10
+Added Net: Name=IO25

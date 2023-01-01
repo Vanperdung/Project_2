@@ -1,0 +1,56 @@
+Removed Pin From Net: NetName=IO23 Pin=IC1-13
+Removed Pin From Net: NetName=IO22 Pin=IC1-14
+Removed Pin From Net: NetName=IO21 Pin=IC1-15
+Removed Pin From Net: NetName=IO19 Pin=IC1-16
+Removed Pin From Net: NetName=IO23 Pin=R1-1
+Removed Pin From Net: NetName=IO22 Pin=R2-1
+Removed Pin From Net: NetName=IO21 Pin=R3-1
+Removed Pin From Net: NetName=IO19 Pin=R4-1
+Added Pin To Net: NetName=GND Pin=B1-1
+Added Pin To Net: NetName=GND Pin=B2-1
+Added Pin To Net: NetName=GND Pin=B3-1
+Added Pin To Net: NetName=+3.3V Pin=C3-2
+Added Pin To Net: NetName=+3.3V Pin=C4-2
+Added Pin To Net: NetName=GND Pin=C7-2
+Added Pin To Net: NetName=GND Pin=C8-2
+Added Pin To Net: NetName=+3.3V Pin=C12-1
+Added Pin To Net: NetName=+3.3V Pin=C13-1
+Added Pin To Net: NetName=+3.3V Pin=IC1-6
+Added Pin To Net: NetName=GND Pin=JP1-3
+Added Pin To Net: NetName=GND Pin=JP1-4
+Added Pin To Net: NetName=+3.3V Pin=L5-2
+Added Pin To Net: NetName=+3.3V Pin=R5-2
+Added Pin To Net: NetName=+3.3V Pin=R6-2
+Added Pin To Net: NetName=+3.3V Pin=R7-2
+Added Pin To Net: NetName=GND Pin=R18-2
+Added Pin To Net: NetName=GND Pin=R19-2
+Added Pin To Net: NetName=GND Pin=R20-2
+Added Pin To Net: NetName=GND Pin=R21-2
+Added Pin To Net: NetName=+3.3V Pin=R23-2
+Added Pin To Net: NetName=GND Pin=U1-1
+Change Net Name : Old Net Name=+12V New Net Name=+12
+Added Pin To Net: NetName=NetIC1_13 Pin=IC1-13
+Added Pin To Net: NetName=NetIC1_13 Pin=R1-1
+Added Net: Name=NetIC1_13
+Added Pin To Net: NetName=NetIC1_14 Pin=IC1-14
+Added Pin To Net: NetName=NetIC1_14 Pin=R2-1
+Added Net: Name=NetIC1_14
+Added Pin To Net: NetName=NetIC1_15 Pin=IC1-15
+Added Pin To Net: NetName=NetIC1_15 Pin=R3-1
+Added Net: Name=NetIC1_15
+Added Pin To Net: NetName=NetIC1_16 Pin=IC1-16
+Added Pin To Net: NetName=NetIC1_16 Pin=R4-1
+Added Net: Name=NetIC1_16
+Change Class Name : Old Net Name=U_ESP32 New Net Name=ESP32
+Change Class Name : Old Net Name=U_TPS5430 New Net Name=TPS5430
+Change Class Name : Old Net Name=U_TTP224 New Net Name=TTP224
+Added Member To Class: ClassName=TPS5430 Member=Component C9 100nF
+Added Member To Class: ClassName=TPS5430 Member=Component C10 100nF
+Added Member To Class: ClassName=TPS5430 Member=Component C11 10uF
+Added Member To Class: ClassName=TPS5430 Member=Component C12 220uF
+Added Member To Class: ClassName=TPS5430 Member=Component R22 100k
+Added Member To Class: ClassName=TPS5430 Member=Component R23 10k
+Change Room Name: Old Name=U_TTP224 New Name=TTP224
+Change Room Scope: Old Scope=InComponentClass('U_TTP224') New Scope=InComponentClass('TTP224')
+Added Room: Name=ESP32
+Added Room: Name=TPS5430

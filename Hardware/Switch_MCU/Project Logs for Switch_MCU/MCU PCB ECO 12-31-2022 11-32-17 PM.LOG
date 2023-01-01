@@ -1,0 +1,20 @@
+Removed Pin From Net: NetName=IO23 Pin=IC1-13
+Removed Pin From Net: NetName=IO22 Pin=IC1-14
+Removed Pin From Net: NetName=IO21 Pin=IC1-15
+Removed Pin From Net: NetName=IO23 Pin=R7-1
+Removed Pin From Net: NetName=IO22 Pin=R8-1
+Removed Pin From Net: NetName=IO21 Pin=R9-1
+Added Pin To Net: NetName=IO16 Pin=IC1-13
+Added Pin To Net: NetName=IO17 Pin=IC1-14
+Added Pin To Net: NetName=IO18 Pin=IC1-15
+Added Pin To Net: NetName=IO16 Pin=R7-1
+Added Pin To Net: NetName=IO17 Pin=R8-1
+Added Pin To Net: NetName=IO18 Pin=R9-1
+Added Member To Class: ClassName=ESP32 Member=Component R1 10k
+Added Member To Class: ClassName=ESP32 Member=Component R2 10k
+Added Member To Class: ClassName=ESP32 Member=Component R5 1k
+Added Member To Class: ClassName=ESP32 Member=Component R7 1k
+Added Member To Class: ClassName=ESP32 Member=Component R9 1k
+Added Member To Class: ClassName=ESP32 Member=Component R12 0R
+Added Member To Class: ClassName=ESP32 Member=Component R14 0R
+Added Member To Class: ClassName=TPS5430 Member=Component R18 10k

@@ -41,23 +41,6 @@ PrefsVaultGUID=
 PrefsRevisionGUID=
 
 [Document1]
-DocumentPath=TTP224.SchDoc
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=0
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=VRWPTPLQ
-
-[Document2]
 DocumentPath=ESP32.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -74,7 +57,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=SKAPHSJN
 
-[Document3]
+[Document2]
 DocumentPath=TPS5430.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -91,8 +74,8 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=ZJLPNUZE
 
-[Document4]
-DocumentPath=Switch_MCU.PcbDoc
+[Document3]
+DocumentPath=MCU.PcbDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -106,24 +89,11 @@ ClassGenCCAutoRoomEnabled=1
 ClassGenNCAutoScope=None
 DItemRevisionGUID=
 GenerateClassCluster=0
-DocumentUniqueId=NLFNJIJD
+DocumentUniqueId=NLVUEXFS
 
-[Document5]
-DocumentPath=Sheet.SchDoc
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=3
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
+[GeneratedDocument1]
+DocumentPath=Project Outputs for Switch_MCU\Design Rule Check - MCU.html
 DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=WABHPISF
 
 [Configuration1]
 Name=Sources
@@ -244,7 +214,7 @@ OutputDefault20=0
 [OutputGroup2]
 Name=Simulator Outputs
 Description=
-TargetPrinter=Microsoft Print to PDF
+TargetPrinter=Canon LBP2900
 PrinterOptions=Record=PrinterOptions|Copies=1|Duplex=1|TrueTypeOptions=3|Collate=1|PrintJobKind=1|PrintWhat=1
 
 [OutputGroup3]

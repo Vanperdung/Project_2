@@ -1,0 +1,10 @@
+Removed Pin From Net: NetName=IO4 Pin=U1-10
+Added Component: Designator=B1(Button 3x4x2.5)
+Added Component: Designator=B2(Button 3x4x2.5)
+Added Pin To Net: NetName=GND Pin=B1-1
+Added Pin To Net: NetName=EN Pin=B1-2
+Added Pin To Net: NetName=GND Pin=B2-1
+Added Pin To Net: NetName=IO0 Pin=B2-2
+Added Pin To Net: NetName=IO25 Pin=U1-10
+Added Member To Class: ClassName=ESP32 Member=Component B1 Button 3x4x2.5
+Added Member To Class: ClassName=ESP32 Member=Component B2 Button 3x4x2.5

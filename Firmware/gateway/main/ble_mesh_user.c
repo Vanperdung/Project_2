@@ -44,15 +44,12 @@
 #include "common.h"
 
 #define MODEL_APP_BIND_BIT BIT0
-#define MODEL_APP_BIND_REPEAT_BIT BIT1
-#define GET_STATE_REPEAT_BIT BIT2
 #define GET_STATE_BIT BIT3
 
 static const char *TAG = "BLE MESH USER";
 extern uint8_t dev_uuid[16];
-extern EventGroupHandle_t mesh_evt_group;
-extern TaskHandle_t mesh_evt_handle;
-extern QueueHandle_t unprov_dev_queue;
+extern EventGroupHandle_t prov_evt_group;
+extern TaskHandle_t prov_dev_handle;
 
 static struct esp_ble_mesh_key
 {
@@ -66,6 +63,13 @@ node_info_t nodes[MAXIMUM_NODE] = {
         .unicast_node = ESP_BLE_MESH_ADDR_UNASSIGNED,
         .elem_num = 0,
         .prov = false,
+    },
+};
+
+prov_node_info_t prov_nodes[5] = {
+    [0 ... 4] = {
+        .node = NULL,
+        .evt = NONE_EVT,
     },
 };
 
@@ -204,6 +208,56 @@ void decode_comp_data(node_info_t *comp, uint8_t *comp_data, int elem_num)
             }
         }
     }
+}
+
+esp_err_t ble_mesh_store_prov_node_info(node_info_t *node, prov_event_t evt)
+{
+    for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
+    {
+        if (prov_nodes[i].node == node)
+        {
+            ESP_LOGW(TAG, "%s: Already exist prov_node 0x%04x", __func__, node->unicast_node);
+            return ESP_OK;
+        }
+        else if (prov_nodes[i].node == NULL)
+        {
+            prov_nodes[i].node = node;
+            prov_nodes[i].evt = evt;
+            return ESP_OK;
+        }
+    }
+    ESP_LOGE(TAG, "%s: Full queue, can not add prov_node 0x%04x", __func__, node->unicast_node);
+    return ESP_FAIL;
+}
+
+void ble_mesh_delete_prov_node_info(prov_node_info_t *prov_node)
+{
+    prov_node->node = NULL;
+    prov_node->evt = NONE_EVT;
+}
+
+esp_err_t ble_mesh_read_prov_node_queue(void)
+{
+    for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
+    {
+        if (prov_nodes[i].node != NULL)
+        {
+            return ESP_OK;
+        }
+    }
+    return ESP_FAIL;
+}
+
+prov_node_info_t *ble_mesh_read_prov_node_info(void)
+{
+    for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
+    {
+        if (prov_nodes[i].node != NULL)
+        {
+            return &prov_nodes[i];
+        }
+    }
+    return NULL;
 }
 
 esp_err_t ble_mesh_store_node_info(const uint8_t uuid[16], uint16_t unicast, uint8_t elem_num)
@@ -459,7 +513,7 @@ static void recv_unprov_adv_pkt(uint8_t dev_uuid[16], uint8_t addr[BD_ADDR_LEN],
                                 uint8_t adv_type, esp_ble_mesh_prov_bearer_t bearer)
 {
     esp_ble_mesh_unprov_dev_add_t add_dev = {0};
-    int err;
+    esp_err_t err;
 
     /* Due to the API esp_ble_mesh_provisioner_set_dev_uuid_match, Provisioner will only
      * use this callback to report the devices, whose device UUID starts with 0xdd & 0xdd,
@@ -579,8 +633,8 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
     opcode = param->params->opcode;
     addr = param->params->ctx.addr;
 
-    // ESP_LOGI(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
-    //          __func__, param->error_code, event, param->params->ctx.addr, opcode);
+    ESP_LOGW(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
+             __func__, param->error_code, event, param->params->ctx.addr, opcode);
 
     if (param->error_code)
     {
@@ -642,22 +696,15 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:
         {
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD");
-            xTaskCreate(&mesh_evt_task, "mesh_evt_task", 4096, (void *)node, 9, &mesh_evt_handle);
-            xEventGroupSetBits(mesh_evt_group, MODEL_APP_BIND_BIT);
+            ble_mesh_store_prov_node_info(node, MODEL_APP_BIND_EVT);
             break;
         }
         case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
         {
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND");
             ESP_LOGI(TAG, "Element Unicast Address :0x%04x", param->status_cb.model_app_status.element_addr);
-            if (node->unicast_node + (uint16_t)node->elem_num > param->status_cb.model_app_status.element_addr + 1)
-            {
-                xEventGroupSetBits(mesh_evt_group, MODEL_APP_BIND_BIT);
-            }
-            else if (node->unicast_node + (uint16_t)node->elem_num == param->status_cb.model_app_status.element_addr + 1)
-            {
-                xEventGroupSetBits(mesh_evt_group, GET_STATE_BIT);
-            }
+            esp_ble_mesh_client_common_param_t common;
+            ble_mesh_onoff_get_state(&common, param->status_cb.model_app_status.element_addr, onoff_client.model);
             break;
         }
         default:
@@ -710,10 +757,8 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         }
         case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
         {
-            if (node->prov == false)
-            {
-                xEventGroupSetBits(mesh_evt_group, MODEL_APP_BIND_REPEAT_BIT);
-            }
+            esp_ble_mesh_client_common_param_t common;
+            ble_mesh_app_bind(&common, node, param->status_cb.model_app_status.element_addr, config_client.model);
             break;
         }
         default:
@@ -768,16 +813,6 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
             }
             onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET unicast: 0x%04x, onoff: 0x%02x", addr, onoff_model->onoff_state);
-            if (node->prov == false && node->unicast_node + (uint16_t)node->elem_num > addr + 1)
-            {
-                xEventGroupSetBits(mesh_evt_group, GET_STATE_BIT);
-            }
-            else if (node->prov == false && node->unicast_node + (uint16_t)node->elem_num == addr + 1)
-            {
-                ESP_LOGW(TAG, "********************** Provision done **********************");
-                node->prov = true;
-                vTaskDelete(mesh_evt_handle);
-            }
             break;
         }
         default:
@@ -790,7 +825,7 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET:
         {
             model_info_t *onoff_model = NULL;
-            onoff_model = ble_mesh_get_model_info_with_model_id(param->params->ctx.addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
+            onoff_model = ble_mesh_get_model_info_with_model_id(addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
             if (!onoff_model)
             {
                 ESP_LOGE(TAG, "%s: Get model info failed", __func__);
@@ -812,11 +847,9 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         {
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET:
         {
-            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET TIMEOUT unicast: 0x%04x", addr);
-            if (node->prov == false)
-            {
-                xEventGroupSetBits(mesh_evt_group, GET_STATE_REPEAT_BIT);
-            }
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET TIMEOUT, unicast: 0x%04x", addr);
+            esp_ble_mesh_client_common_param_t common;
+            ble_mesh_onoff_get_state(&common, addr, onoff_client.model);
             break;
         }
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET:
@@ -886,42 +919,40 @@ esp_err_t ble_mesh_init(void)
     return err;
 }
 
-void mesh_evt_task(void *param)
+void prov_dev_task(void *param)
 {
-    EventBits_t evt_bit;
-    node_info_t *node = (node_info_t *)param;
-    uint16_t model_app_bind_addr = node->unicast_node - 1;
-    uint16_t get_state_addr = node->unicast_node - 1;
+    BaseType_t ret;
+    prov_node_info_t *prov_node = NULL;
     while (1)
     {
-        evt_bit = xEventGroupWaitBits(mesh_evt_group, MODEL_APP_BIND_BIT | MODEL_APP_BIND_REPEAT_BIT | GET_STATE_REPEAT_BIT | GET_STATE_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
-        if (evt_bit & MODEL_APP_BIND_BIT)
+        ret = ble_mesh_read_prov_node_queue();
+        if (ret == ESP_OK)
         {
-            model_app_bind_addr++;
-            esp_ble_mesh_client_common_param_t common;
-            ble_mesh_app_bind(&common, node, model_app_bind_addr, config_client.model);
-        }
-        else if (evt_bit & MODEL_APP_BIND_REPEAT_BIT)
-        {
-            // ESP_LOGW(TAG, "Model app bind repeat");
-            esp_ble_mesh_client_common_param_t common;
-            ble_mesh_app_bind(&common, node, model_app_bind_addr, config_client.model);
-        }
-        else if (evt_bit & GET_STATE_BIT)
-        {
-            get_state_addr++;
-            esp_ble_mesh_client_common_param_t common;
-            ble_mesh_onoff_get_state(&common, get_state_addr, onoff_client.model);
-        }
-        else if (evt_bit & GET_STATE_REPEAT_BIT)
-        {
-            // ESP_LOGW(TAG, "Get state repeat");
-            esp_ble_mesh_client_common_param_t common;
-            ble_mesh_onoff_get_state(&common, get_state_addr, onoff_client.model);
+            prov_node = ble_mesh_read_prov_node_info();
+            if (prov_node->evt == MODEL_APP_BIND_EVT)
+            {
+                esp_ble_mesh_client_common_param_t common;
+                for (int i = 0; i < prov_node->node->elem_num; i++)
+                {
+                    ble_mesh_app_bind(&common, prov_node->node, prov_node->node->elem[i].unicast_elem, config_client.model);
+                    vTaskDelay(2000 / portTICK_RATE_MS);
+                }
+                ble_mesh_delete_prov_node_info(prov_node);
+            }
+            else if (prov_node->evt == MODEL_GET_STATE_EVT)
+            {
+                for (int i = 0; i < prov_node->node->elem_num; i++)
+                {
+                    esp_ble_mesh_client_common_param_t common;
+                    ble_mesh_onoff_get_state(&common, prov_node->node->elem[i].unicast_elem, onoff_client.model);
+                }
+            }
+            else
+                ESP_LOGE(TAG, "Prov node event wrong");
         }
         else
         {
-            vTaskDelay(10 / portTICK_RATE_MS);
+            vTaskDelay(50 / portTICK_RATE_MS);
         }
     }
 }
@@ -982,4 +1013,3 @@ void mesh_evt_task(void *param)
 //         vTaskDelay(50 / portTICK_RATE_MS);
 //     }
 // }
-

@@ -1,0 +1,23 @@
+Removed Pin From Net: NetName=IO33 Pin=LED2-1
+Removed Pin From Net: NetName=IO27 Pin=LED4-1
+Change Component Designator: OldDesignator=R8 NewDesignator=R4
+Change Component Designator: OldDesignator=R9 NewDesignator=R5
+Change Component Designator: OldDesignator=R10 NewDesignator=R6
+Change Component Designator: OldDesignator=R11 NewDesignator=R7
+Change Component Designator: OldDesignator=R12 NewDesignator=R8
+Change Component Designator: OldDesignator=R13 NewDesignator=R9
+Change Component Designator: OldDesignator=R14 NewDesignator=R10
+Change Component Designator: OldDesignator=R15 NewDesignator=R11
+Change Component Designator: OldDesignator=R16 NewDesignator=R12
+Change Component Designator: OldDesignator=R17 NewDesignator=R13
+Change Component Designator: OldDesignator=R18 NewDesignator=R14
+Change Component Designator: OldDesignator=R19 NewDesignator=R15
+Change Component Designator: OldDesignator=R20 NewDesignator=R16
+Change Component Designator: OldDesignator=R21 NewDesignator=R17
+Change Component Designator: OldDesignator=R22 NewDesignator=R18
+Change Component Designator: OldDesignator=R23 NewDesignator=R19
+Change Component Designator: OldDesignator=R24 NewDesignator=R20
+Added Pin To Net: NetName=RL1 Pin=LED1-1
+Added Pin To Net: NetName=RL2 Pin=LED2-1
+Added Pin To Net: NetName=RL3 Pin=LED3-1
+Added Pin To Net: NetName=RL4 Pin=LED4-1
