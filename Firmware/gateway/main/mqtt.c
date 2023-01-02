@@ -126,7 +126,6 @@ static void mqtt_task(void *param)
             mqtt_parse_data(mess_recv, &mqtt_obj);
             if (strcmp(mqtt_obj.action, "set") == 0)
             {
-                ESP_LOGW(TAG, "unicast: 0x%04x, state: 0x%02x", (uint16_t)mqtt_obj.unicast_addr, (uint8_t)mqtt_obj.state);
                 ble_mesh_set_msg_common(&common, (uint16_t)mqtt_obj.unicast_addr, onoff_client.model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET);
                 set_state.onoff_set.op_en = false;
                 set_state.onoff_set.onoff = (uint8_t)mqtt_obj.state;

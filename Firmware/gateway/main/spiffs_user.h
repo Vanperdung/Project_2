@@ -1,12 +1,12 @@
 /**
  * @file spiffs_user.h
  * @author Vanperdung (dung.nv382001@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2023-01-02
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  */
 
 #ifndef _SPIFFS_USER_H_
