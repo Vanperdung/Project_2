@@ -46,6 +46,7 @@
 static const char *TAG = "WIFI";
 static EventGroupHandle_t wifi_event_group;
 extern status_t status;
+extern esp_mqtt_client_handle_t client;
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
@@ -69,6 +70,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
     {
 		ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
 		ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        esp_mqtt_client_reconnect(client);
 	}
 }
 

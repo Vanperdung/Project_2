@@ -32,6 +32,7 @@
 #include "esp_wifi.h"
 #include "esp_smartconfig.h"
 #include "mqtt_client.h"
+#include "esp_spiffs.h"
 
 #include "driver/gpio.h"
 
@@ -42,6 +43,7 @@
 #include "ble_mesh_user.h"
 #include "smartconfig.h"
 #include "common.h"
+#include "spiffs_user.h"
 
 #define MODEL_APP_BIND_BIT BIT0
 #define GET_STATE_BIT BIT3
@@ -62,7 +64,6 @@ node_info_t nodes[MAXIMUM_NODE] = {
     [0 ... MAXIMUM_NODE - 1] = {
         .unicast_node = ESP_BLE_MESH_ADDR_UNASSIGNED,
         .elem_num = 0,
-        .prov = false,
     },
 };
 
@@ -70,6 +71,10 @@ prov_node_info_t prov_nodes[5] = {
     [0 ... 4] = {
         .node = NULL,
         .evt = NONE_EVT,
+        .model_app_bind = {
+            .elem_index = 0,
+            .model_app_bind_flag = 0,
+        },
     },
 };
 
@@ -230,6 +235,19 @@ esp_err_t ble_mesh_store_prov_node_info(node_info_t *node, prov_event_t evt)
     return ESP_FAIL;
 }
 
+prov_node_info_t *ble_mesh_get_prov_node_info(node_info_t *node)
+{
+    for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
+    {
+        if (prov_nodes[i].node == node)
+        {
+            return &prov_nodes[i];
+        }
+    }
+    ESP_LOGE(TAG, "Can not get prov node info");
+    return NULL;
+}
+
 void ble_mesh_delete_prov_node_info(prov_node_info_t *prov_node)
 {
     prov_node->node = NULL;
@@ -272,7 +290,6 @@ esp_err_t ble_mesh_store_node_info(const uint8_t uuid[16], uint16_t unicast, uin
         if (!memcmp(nodes[i].uuid, uuid, 16))
         {
             ESP_LOGW(TAG, "%s: reprovisioned device 0x%04x", __func__, unicast);
-            nodes[i].prov = false;
             nodes[i].unicast_node = unicast;
             nodes[i].elem_num = elem_num;
             for (int j = 0; j < elem_num; j++)
@@ -287,7 +304,6 @@ esp_err_t ble_mesh_store_node_info(const uint8_t uuid[16], uint16_t unicast, uin
     {
         if (nodes[i].unicast_node == ESP_BLE_MESH_ADDR_UNASSIGNED)
         {
-            nodes[i].prov = false;
             memcpy(nodes[i].uuid, uuid, 16);
             nodes[i].unicast_node = unicast;
             nodes[i].elem_num = elem_num;
@@ -300,6 +316,21 @@ esp_err_t ble_mesh_store_node_info(const uint8_t uuid[16], uint16_t unicast, uin
     }
 
     return ESP_FAIL;
+}
+
+void ble_mesh_get_number_node(void)
+{
+    int j = 1;
+    for (int i = 0; i < ARRAY_SIZE(nodes); i++)
+    {
+        if (strlen((char *)nodes[i].uuid))
+        {
+            ESP_LOGW(TAG, "Node %d: unicast node 0x%04x", j, nodes[i].unicast_node);
+            j++;
+        }
+    }
+    if (j == 1)
+        ESP_LOGW(TAG, "No node yet");
 }
 
 void ble_mesh_store_composition_info(node_info_t *comp, uint8_t *comp_data, int elem_num)
@@ -513,7 +544,6 @@ static void recv_unprov_adv_pkt(uint8_t dev_uuid[16], uint8_t addr[BD_ADDR_LEN],
                                 uint8_t adv_type, esp_ble_mesh_prov_bearer_t bearer)
 {
     esp_ble_mesh_unprov_dev_add_t add_dev = {0};
-    esp_err_t err;
 
     /* Due to the API esp_ble_mesh_provisioner_set_dev_uuid_match, Provisioner will only
      * use this callback to report the devices, whose device UUID starts with 0xdd & 0xdd,
@@ -531,7 +561,7 @@ static void recv_unprov_adv_pkt(uint8_t dev_uuid[16], uint8_t addr[BD_ADDR_LEN],
     add_dev.bearer = (uint8_t)bearer;
     /* Note: If unprovisioned device adv packets have not been received, we should not add
              device with ADD_DEV_START_PROV_NOW_FLAG set. */
-    err = esp_ble_mesh_provisioner_add_unprov_dev(&add_dev,
+    esp_ble_mesh_provisioner_add_unprov_dev(&add_dev,
                                                   ADD_DEV_RM_AFTER_PROV_FLAG | ADD_DEV_START_PROV_NOW_FLAG);
     // if (err)
     // {
@@ -631,10 +661,10 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
     int err;
 
     opcode = param->params->opcode;
-    addr = param->params->ctx.addr;
+    addr = param->params->ctx.addr; // Element address
 
-    ESP_LOGW(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
-             __func__, param->error_code, event, param->params->ctx.addr, opcode);
+    // ESP_LOGW(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
+    //          __func__, param->error_code, event, param->params->ctx.addr, opcode);
 
     if (param->error_code)
     {
@@ -702,7 +732,9 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
         {
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND");
-            ESP_LOGI(TAG, "Element Unicast Address :0x%04x", param->status_cb.model_app_status.element_addr);
+            prov_node_info_t *prov_node = ble_mesh_get_prov_node_info(node);
+            prov_node->model_app_bind.model_app_bind_flag = true;
+            // ESP_LOGI(TAG, "Element Unicast Address :0x%04x", param->status_cb.model_app_status.element_addr);
             esp_ble_mesh_client_common_param_t common;
             ble_mesh_onoff_get_state(&common, param->status_cb.model_app_status.element_addr, onoff_client.model);
             break;
@@ -757,8 +789,11 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         }
         case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
         {
+            prov_node_info_t *prov_node = ble_mesh_get_prov_node_info(node);
+            int index = prov_node->model_app_bind.elem_index;
             esp_ble_mesh_client_common_param_t common;
-            ble_mesh_app_bind(&common, node, param->status_cb.model_app_status.element_addr, config_client.model);
+            ble_mesh_app_bind(&common, node, prov_node->node->elem[index].unicast_elem, config_client.model);
+            ESP_LOGW(TAG, "Model App Bind timeout, unicast address: %04x", prov_node->node->elem[index].unicast_elem);
             break;
         }
         default:
@@ -779,7 +814,7 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
     uint16_t addr;
 
     opcode = param->params->opcode;
-    addr = param->params->ctx.addr;
+    addr = param->params->ctx.addr; // Element address
 
     // ESP_LOGI(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
     //          __func__, param->error_code, event, param->params->ctx.addr, opcode);
@@ -916,6 +951,7 @@ esp_err_t ble_mesh_init(void)
 
     ESP_LOGI(TAG, "BLE Mesh Provisioner initialized");
 
+    ble_mesh_get_number_node();
     return err;
 }
 
@@ -934,8 +970,13 @@ void prov_dev_task(void *param)
                 esp_ble_mesh_client_common_param_t common;
                 for (int i = 0; i < prov_node->node->elem_num; i++)
                 {
+                    prov_node->model_app_bind.model_app_bind_flag = false;
+                    prov_node->model_app_bind.elem_index = i;
                     ble_mesh_app_bind(&common, prov_node->node, prov_node->node->elem[i].unicast_elem, config_client.model);
-                    vTaskDelay(2000 / portTICK_RATE_MS);
+                    while (!prov_node->model_app_bind.model_app_bind_flag)
+                    {
+                        vTaskDelay(200 / portTICK_RATE_MS);
+                    }
                 }
                 ble_mesh_delete_prov_node_info(prov_node);
             }

@@ -41,6 +41,7 @@
 #include "esp_http_client.h"
 #include "esp_attr.h"
 #include "mqtt_client.h"
+#include "esp_spiffs.h"
 
 #include "driver/gpio.h"
 
@@ -53,6 +54,7 @@
 #include "smartconfig.h"
 #include "led.h"
 #include "button.h"
+#include "spiffs_config.h"
 
 static const char *TAG = "MAIN";
 RTC_NOINIT_ATTR int smartconfig_flag;
@@ -104,6 +106,7 @@ void app_main(void)
         err = nvs_flash_init();
     }
     ESP_ERROR_CHECK(err);
+    mount_SPIFFS();
     xTaskCreate(&led_task, "led_task", 4096, NULL, 5, NULL);
     xTaskCreate(&button_task, "button_task", 4096, NULL, 5, NULL);
     wifi_init();

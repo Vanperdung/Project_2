@@ -60,7 +60,6 @@ typedef struct
     uint16_t crpl;
     uint16_t feature;
     elem_info_t elem[10];
-    bool prov;
 } node_info_t;
 
 typedef enum
@@ -72,8 +71,15 @@ typedef enum
 
 typedef struct 
 {
+    int elem_index;
+    bool model_app_bind_flag;
+} model_app_bind_t;
+
+typedef struct 
+{
     node_info_t *node;
     prov_event_t evt;
+    model_app_bind_t model_app_bind;
 } prov_node_info_t;
 
 void prov_dev_task(void *param);
