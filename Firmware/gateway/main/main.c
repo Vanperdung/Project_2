@@ -54,7 +54,7 @@
 #include "smartconfig.h"
 #include "led.h"
 #include "button.h"
-#include "spiffs_config.h"
+#include "spiffs_user.h"
 
 static const char *TAG = "MAIN";
 RTC_NOINIT_ATTR int smartconfig_flag;

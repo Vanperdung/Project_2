@@ -86,5 +86,27 @@ void prov_dev_task(void *param);
 esp_err_t bluetooth_init(void);
 void ble_mesh_get_dev_uuid(uint8_t *dev_uuid);
 esp_err_t ble_mesh_init(void);
+esp_err_t ble_mesh_app_bind(esp_ble_mesh_client_common_param_t *common, node_info_t *node, uint16_t unicast_elem, esp_ble_mesh_model_t *model);
+esp_err_t ble_mesh_onoff_set_state(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem, esp_ble_mesh_model_t *onoff_client_model);
+esp_err_t ble_mesh_onoff_get_state(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem, esp_ble_mesh_model_t *onoff_client_model);
+esp_err_t ble_mesh_set_msg_common(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem,
+                                  esp_ble_mesh_model_t *client_model, uint32_t opcode);
+model_info_t *ble_mesh_get_model_info_with_model_id(uint16_t unicast, uint16_t model_id);
+elem_info_t *ble_mesh_get_elem_info_with_unicast(uint16_t unicast);
+node_info_t *ble_mesh_get_node_info_with_uuid(uint8_t *uuid);
+node_info_t *ble_mesh_get_node_info_with_unicast(uint16_t unicast);
+void ble_mesh_store_composition_info(node_info_t *comp, uint8_t *comp_data, int elem_num);
+void ble_mesh_get_number_node(void);
+esp_err_t ble_mesh_store_node_info(const uint8_t uuid[16], uint16_t unicast, uint8_t elem_num);
+prov_node_info_t *ble_mesh_read_prov_node_info(void);
+esp_err_t ble_mesh_read_prov_node_queue(void);
+void ble_mesh_delete_prov_node_info(prov_node_info_t *prov_node);
+prov_node_info_t *ble_mesh_get_prov_node_info(node_info_t *node);
+esp_err_t ble_mesh_store_prov_node_info(node_info_t *node, prov_event_t evt);
+void decode_comp_data(node_info_t *comp, uint8_t *comp_data, int elem_num);
+esp_err_t ble_mesh_delete_node_info_in_flash(node_info_t *comp);
+esp_err_t ble_mesh_restore_node_info_in_flash(node_info_t *comp);
+esp_err_t ble_mesh_store_node_info_in_flash(node_info_t *comp);
 
 #endif
+

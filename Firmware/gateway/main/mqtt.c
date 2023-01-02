@@ -56,6 +56,9 @@ extern char topic_commands_process[50];
 extern char topic_commands_version[50];
 extern char topic_commands_fota[50];
 extern status_t status;
+extern node_info_t nodes[MAXIMUM_NODE];
+extern esp_ble_mesh_client_t config_client;
+extern esp_ble_mesh_client_t onoff_client;
 
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
@@ -110,6 +113,8 @@ static void mqtt_task(void *param)
     char *mess_recv = NULL;
     size_t mess_size = 0;
     mqtt_obj_t mqtt_obj;
+    esp_ble_mesh_generic_client_set_state_t set_state;
+    esp_ble_mesh_client_common_param_t common;
     while (1)
     {
         mess_recv = (char *)xRingbufferReceive(mqtt_ring_buf, &mess_size, portMAX_DELAY);
@@ -121,6 +126,16 @@ static void mqtt_task(void *param)
             mqtt_parse_data(mess_recv, &mqtt_obj);
             if (strcmp(mqtt_obj.action, "set") == 0)
             {
+                ESP_LOGW(TAG, "unicast: 0x%04x, state: 0x%02x", (uint16_t)mqtt_obj.unicast_addr, (uint8_t)mqtt_obj.state);
+                ble_mesh_set_msg_common(&common, (uint16_t)mqtt_obj.unicast_addr, onoff_client.model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET);
+                set_state.onoff_set.op_en = false;
+                set_state.onoff_set.onoff = (uint8_t)mqtt_obj.state;
+                set_state.onoff_set.tid = 0;
+                esp_err_t err = esp_ble_mesh_generic_client_set_state(&common, &set_state);
+                if (err)
+                {
+                    ESP_LOGE(TAG, "%s: Generic OnOff Set failed", __func__);
+                }
             }
             else if (strcmp(mqtt_obj.action, "get") == 0)
             {

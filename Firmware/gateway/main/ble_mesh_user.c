@@ -52,6 +52,15 @@ static const char *TAG = "BLE MESH USER";
 extern uint8_t dev_uuid[16];
 extern EventGroupHandle_t prov_evt_group;
 extern TaskHandle_t prov_dev_handle;
+extern char topic_commands_set[50];
+extern char topic_commands_get[50];
+extern char topic_commands_status[50];
+extern char topic_commands_heartbeat[50];
+extern char topic_commands_network[50];
+extern char topic_commands_process[50];
+extern char topic_commands_version[50];
+extern char topic_commands_fota[50];
+extern esp_mqtt_client_handle_t client;
 
 static struct esp_ble_mesh_key
 {
@@ -78,8 +87,9 @@ prov_node_info_t prov_nodes[5] = {
     },
 };
 
-static esp_ble_mesh_client_t config_client;
-static esp_ble_mesh_client_t onoff_client;
+esp_ble_mesh_client_t config_client;
+esp_ble_mesh_client_t onoff_client;
+
 static esp_ble_mesh_cfg_srv_t config_server = {
     .relay = ESP_BLE_MESH_RELAY_DISABLED,
     .beacon = ESP_BLE_MESH_BEACON_ENABLED,
@@ -562,7 +572,7 @@ static void recv_unprov_adv_pkt(uint8_t dev_uuid[16], uint8_t addr[BD_ADDR_LEN],
     /* Note: If unprovisioned device adv packets have not been received, we should not add
              device with ADD_DEV_START_PROV_NOW_FLAG set. */
     esp_ble_mesh_provisioner_add_unprov_dev(&add_dev,
-                                                  ADD_DEV_RM_AFTER_PROV_FLAG | ADD_DEV_START_PROV_NOW_FLAG);
+                                            ADD_DEV_RM_AFTER_PROV_FLAG | ADD_DEV_START_PROV_NOW_FLAG);
     // if (err)
     // {
     //     ESP_LOGE(TAG, "%s: Add unprovisioned device into queue failed", __func__);
@@ -840,6 +850,7 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET:
         {
             model_info_t *onoff_model = NULL;
+            char status_payload[200] = {0};
             onoff_model = ble_mesh_get_model_info_with_model_id(param->params->ctx.addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
             if (!onoff_model)
             {
@@ -847,6 +858,8 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
                 return;
             }
             onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
+            sprintf(status_payload, "{\"action\":\"onoff\",\"status\":\"get\",\"unicast_addr\":%u,\"state\":%u}", addr, onoff_model->onoff_state);
+            esp_mqtt_client_publish(client, topic_commands_status, status_payload, strlen(status_payload), 0, 0);
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET unicast: 0x%04x, onoff: 0x%02x", addr, onoff_model->onoff_state);
             break;
         }
@@ -860,6 +873,7 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET:
         {
             model_info_t *onoff_model = NULL;
+            char status_payload[200] = {0};
             onoff_model = ble_mesh_get_model_info_with_model_id(addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
             if (!onoff_model)
             {
@@ -867,6 +881,8 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
                 return;
             }
             onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
+            sprintf(status_payload, "{\"action\":\"onoff\",\"status\":\"set\",\"unicast_addr\":%u,\"state\":%u}", addr, onoff_model->onoff_state);
+            esp_mqtt_client_publish(client, topic_commands_status, status_payload, strlen(status_payload), 0, 0);
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET unicast: 0x%04x, onoff: 0x%02x", addr, onoff_model->onoff_state);
             break;
         }
@@ -959,6 +975,7 @@ void prov_dev_task(void *param)
 {
     BaseType_t ret;
     prov_node_info_t *prov_node = NULL;
+    char nw_payload[100] = {0};
     while (1)
     {
         ret = ble_mesh_read_prov_node_queue();
@@ -978,6 +995,8 @@ void prov_dev_task(void *param)
                         vTaskDelay(200 / portTICK_RATE_MS);
                     }
                 }
+                sprintf(nw_payload, "{\"action\":\"join\",\"uuid\":\"%s\",\"unicast_addr\":%u,\"element_num\":%u}", bt_hex(prov_node->node->uuid, strlen((char *)prov_node->node->uuid)), prov_node->node->unicast_node, prov_node->node->elem_num);
+                esp_mqtt_client_publish(client, topic_commands_network, nw_payload, strlen(nw_payload), 0, 0);
                 ble_mesh_delete_prov_node_info(prov_node);
             }
             else if (prov_node->evt == MODEL_GET_STATE_EVT)
