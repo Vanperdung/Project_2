@@ -38,6 +38,7 @@ typedef struct
     uint16_t model_id;
     uint8_t model_name[20];
     uint8_t onoff_state;
+    uint8_t target_state;
 } model_info_t;
 
 typedef struct
@@ -87,7 +88,7 @@ esp_err_t bluetooth_init(void);
 void ble_mesh_get_dev_uuid(uint8_t *dev_uuid);
 esp_err_t ble_mesh_init(void);
 esp_err_t ble_mesh_app_bind(esp_ble_mesh_client_common_param_t *common, node_info_t *node, uint16_t unicast_elem, esp_ble_mesh_model_t *model);
-esp_err_t ble_mesh_onoff_set_state(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem, esp_ble_mesh_model_t *onoff_client_model);
+esp_err_t ble_mesh_onoff_set_state(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem, esp_ble_mesh_model_t *onoff_client_model, uint8_t state);
 esp_err_t ble_mesh_onoff_get_state(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem, esp_ble_mesh_model_t *onoff_client_model);
 esp_err_t ble_mesh_set_msg_common(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem,
                                   esp_ble_mesh_model_t *client_model, uint32_t opcode);
@@ -107,6 +108,6 @@ void decode_comp_data(node_info_t *comp, uint8_t *comp_data, int elem_num);
 esp_err_t ble_mesh_delete_node_info_in_flash(node_info_t *comp);
 esp_err_t ble_mesh_restore_node_info_in_flash(node_info_t *comp);
 esp_err_t ble_mesh_store_node_info_in_flash(node_info_t *comp);
-
+esp_err_t ble_mesh_deinit(void);
 #endif
 

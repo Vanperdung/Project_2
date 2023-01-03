@@ -42,6 +42,7 @@
 #include "ble_mesh_user.h"
 #include "smartconfig.h"
 #include "common.h"
+#include "fota.h"
 
 static const char *TAG = "MQTT";
 RingbufHandle_t mqtt_ring_buf;
@@ -113,7 +114,6 @@ static void mqtt_task(void *param)
     char *mess_recv = NULL;
     size_t mess_size = 0;
     mqtt_obj_t mqtt_obj;
-    esp_ble_mesh_generic_client_set_state_t set_state;
     esp_ble_mesh_client_common_param_t common;
     while (1)
     {
@@ -126,14 +126,14 @@ static void mqtt_task(void *param)
             mqtt_parse_data(mess_recv, &mqtt_obj);
             if (strcmp(mqtt_obj.action, "set") == 0)
             {
-                ble_mesh_set_msg_common(&common, (uint16_t)mqtt_obj.unicast_addr, onoff_client.model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET);
-                set_state.onoff_set.op_en = false;
-                set_state.onoff_set.onoff = (uint8_t)mqtt_obj.state;
-                set_state.onoff_set.tid = 0;
-                esp_err_t err = esp_ble_mesh_generic_client_set_state(&common, &set_state);
-                if (err)
+                ble_mesh_onoff_set_state(&common, (uint16_t)mqtt_obj.unicast_addr, onoff_client.model, (uint8_t)mqtt_obj.state);
+            }
+            else if (strcmp(mqtt_obj.action, "set-all") == 0)
+            {
+                node_info_t *node = ble_mesh_get_node_info_with_unicast((uint16_t)mqtt_obj.unicast_addr);
+                for (uint8_t i = 0; i < node->elem_num; i++)
                 {
-                    ESP_LOGE(TAG, "%s: Generic OnOff Set failed", __func__);
+                    ble_mesh_onoff_set_state(&common, node->elem[i].unicast_elem, onoff_client.model, (uint8_t)mqtt_obj.state);
                 }
             }
             else if (strcmp(mqtt_obj.action, "get") == 0)
@@ -141,7 +141,12 @@ static void mqtt_task(void *param)
             }
             else if (strcmp(mqtt_obj.action, "upgrade") == 0)
             {
-                // xTaskCreate(&fota_task, "fota_task", 8192, mqtt_obj.url, 10, NULL);
+                uint32_t free_heap_size = 0, min_free_heap_size = 0;
+                free_heap_size = esp_get_free_heap_size();
+                min_free_heap_size = esp_get_minimum_free_heap_size();
+                ESP_LOGW(TAG, "Free heap size = %d, Min free heap size = %d", free_heap_size, min_free_heap_size);
+                ble_mesh_deinit();
+                xTaskCreate(&fota_task, "fota_task", 8192, mqtt_obj.url, 8, NULL);
             }
             vRingbufferReturnItem(mqtt_ring_buf, (void *)mess_recv);
         }
@@ -164,5 +169,5 @@ void mqtt_client_sta(void)
     client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(client);
-    xTaskCreate(&mqtt_task, "mqtt_task", 8192, NULL, 9, NULL);
+    xTaskCreate(&mqtt_task, "mqtt_task", 4096, NULL, 9, NULL);
 }

@@ -464,8 +464,20 @@ esp_err_t ble_mesh_onoff_get_state(esp_ble_mesh_client_common_param_t *common, u
     return ESP_OK;
 }
 
-esp_err_t ble_mesh_onoff_set_state(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem, esp_ble_mesh_model_t *onoff_client_model)
+esp_err_t ble_mesh_onoff_set_state(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem, esp_ble_mesh_model_t *onoff_client_model, uint8_t state)
 {
+    esp_ble_mesh_generic_client_set_state_t set_state = {0};
+    model_info_t *model = ble_mesh_get_model_info_with_model_id(unicast_elem, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
+    model->target_state = state;
+    ble_mesh_set_msg_common(common, unicast_elem, onoff_client_model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET);
+    set_state.onoff_set.op_en = false;
+    set_state.onoff_set.onoff = state;
+    set_state.onoff_set.tid = 0;
+    esp_err_t err = esp_ble_mesh_generic_client_set_state(common, &set_state);
+    if (err)
+    {
+        ESP_LOGE(TAG, "%s: Generic OnOff Set failed", __func__);
+    }
     return ESP_OK;
 }
 
@@ -486,6 +498,24 @@ esp_err_t ble_mesh_app_bind(esp_ble_mesh_client_common_param_t *common, node_inf
     return ESP_OK;
 }
 
+esp_err_t ble_mesh_deinit(void)
+{
+	esp_err_t err = ESP_OK;
+	esp_ble_mesh_deinit_param_t param;
+	param.erase_flash = false;
+	err = esp_ble_mesh_deinit(&param);
+	if (err == ESP_OK)
+	{
+		ESP_LOGW(TAG, "esp_ble_mesh_deinit success (err %d)", err);
+	}
+	else
+	{
+		ESP_LOGE(TAG, "esp_ble_mesh_deinit fail (err %d)", err);
+	}
+	esp_bluedroid_disable();
+	esp_bluedroid_deinit();
+	return err;
+}
 static esp_err_t prov_complete(int node_idx, const esp_ble_mesh_octet16_t uuid,
                                uint16_t unicast, uint8_t elem_num, uint16_t net_idx)
 {
@@ -905,6 +935,10 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         }
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET:
         {
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET TIMEOUT, unicast: 0x%04x", addr);
+            esp_ble_mesh_client_common_param_t common;
+            model_info_t *model = ble_mesh_get_model_info_with_model_id(addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
+            ble_mesh_onoff_set_state(&common, addr, onoff_client.model, model->target_state);
             break;
         }
         default:
@@ -976,6 +1010,7 @@ void prov_dev_task(void *param)
     BaseType_t ret;
     prov_node_info_t *prov_node = NULL;
     char nw_payload[100] = {0};
+    esp_ble_mesh_client_common_param_t common;
     while (1)
     {
         ret = ble_mesh_read_prov_node_queue();
@@ -984,7 +1019,6 @@ void prov_dev_task(void *param)
             prov_node = ble_mesh_read_prov_node_info();
             if (prov_node->evt == MODEL_APP_BIND_EVT)
             {
-                esp_ble_mesh_client_common_param_t common;
                 for (int i = 0; i < prov_node->node->elem_num; i++)
                 {
                     prov_node->model_app_bind.model_app_bind_flag = false;
@@ -1003,7 +1037,6 @@ void prov_dev_task(void *param)
             {
                 for (int i = 0; i < prov_node->node->elem_num; i++)
                 {
-                    esp_ble_mesh_client_common_param_t common;
                     ble_mesh_onoff_get_state(&common, prov_node->node->elem[i].unicast_elem, onoff_client.model);
                 }
             }
@@ -1016,60 +1049,3 @@ void prov_dev_task(void *param)
         }
     }
 }
-
-// void button_task(void *param)
-// {
-//     TickType_t bt_tick = 0;
-//     _button button_boot = {
-//         .pin = GPIO_NUM_0,
-//         .time_down = 0,
-//         .time_set = 1000,
-//     };
-//     gpio_config_t boot_cfg = {
-//         .intr_type = GPIO_INTR_DISABLE,
-//         .mode = GPIO_MODE_INPUT,
-//         .pull_up_en = GPIO_PULLUP_ONLY,
-//         .pull_down_en = GPIO_PULLDOWN_DISABLE,
-//         .pin_bit_mask = (1ULL << button_boot.pin),
-//     };
-//     esp_err_t err = gpio_config(&boot_cfg);
-//     if (err != ESP_OK)
-//     {
-//         ESP_LOGE(TAG, "button boot config failed (err %d)", err);
-//         return;
-//     }
-
-//     esp_ble_mesh_generic_client_set_state_t set_state;
-//     esp_ble_mesh_client_common_param_t common;
-
-//     while (1)
-//     {
-//         if (!gpio_get_level(button_boot.pin))
-//         {
-//             if (bt_tick == 0)
-//                 bt_tick = xTaskGetTickCount();
-//             button_boot.time_down += xTaskGetTickCount() - bt_tick;
-//             bt_tick = xTaskGetTickCount();
-//             if (button_boot.time_down >= (button_boot.time_set / portTICK_RATE_MS))
-//             {
-//                 ble_mesh_set_msg_common(&common, nodes[0].elem[1].unicast_elem, onoff_client.model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET);
-//                 set_state.onoff_set.op_en = false;
-//                 set_state.onoff_set.onoff = !nodes[0].elem[1].sig_models[0].onoff_state;
-//                 set_state.onoff_set.tid = 0;
-//                 esp_err_t err = esp_ble_mesh_generic_client_set_state(&common, &set_state);
-//                 if (err)
-//                 {
-//                     ESP_LOGE(TAG, "%s: Generic OnOff Set failed", __func__);
-//                 }
-//                 while (!gpio_get_level(button_boot.pin))
-//                     vTaskDelay(50 / portTICK_RATE_MS);
-//             }
-//         }
-//         else
-//         {
-//             button_boot.time_down = 0;
-//             bt_tick = 0;
-//         }
-//         vTaskDelay(50 / portTICK_RATE_MS);
-//     }
-// }

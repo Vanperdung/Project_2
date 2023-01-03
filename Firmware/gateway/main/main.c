@@ -58,7 +58,7 @@
 
 static const char *TAG = "MAIN";
 RTC_NOINIT_ATTR int smartconfig_flag;
-char version[10] = "0.0.1";
+char version[10] = "0.0.4";
 char topic_commands_set[50] = "mandevices/commands/set";
 char topic_commands_get[50] = "mandevices/commands/get";
 char topic_commands_status[50] = "mandevices/commands/status";
@@ -107,8 +107,8 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(err);
     mount_SPIFFS();
-    xTaskCreate(&led_task, "led_task", 4096, NULL, 5, NULL);
-    xTaskCreate(&button_task, "button_task", 4096, NULL, 5, NULL);
+    xTaskCreate(&led_task, "led_task", 2048, NULL, 5, NULL);
+    xTaskCreate(&button_task, "button_task", 2048, NULL, 5, NULL);
     wifi_init();
     if (smartconfig_flag == ENABLE_SC)
     {

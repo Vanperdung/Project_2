@@ -8,3 +8,17 @@
  * @copyright Copyright (c) 2023
  * 
  */
+
+#ifndef _FOTA_H_
+#define _FOTA_H_
+
+#include <math.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+void fota_task(void *param);
+
+#endif
