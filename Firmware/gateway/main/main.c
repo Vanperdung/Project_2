@@ -67,6 +67,7 @@ char topic_commands_network[50] = "mandevices/commands/network";
 char topic_commands_process[50] = "mandevices/commands/process";
 char topic_commands_version[50] = "mandevices/commands/version";
 char topic_commands_fota[50] = "mandevices/commands/fota";
+char topic_commands_group[50] = "mandevices/commands/group";
 status_t status = LOCAL_MODE;
 EventGroupHandle_t prov_evt_group;
 TaskHandle_t prov_dev_handle;

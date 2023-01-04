@@ -47,7 +47,7 @@
 
 #define MODEL_APP_BIND_BIT BIT0
 #define GET_STATE_BIT BIT3
-
+#define ONOFF_GROUP_ADDR 0xC000
 static const char *TAG = "BLE MESH USER";
 extern uint8_t dev_uuid[16];
 extern EventGroupHandle_t prov_evt_group;
@@ -60,7 +60,9 @@ extern char topic_commands_network[50];
 extern char topic_commands_process[50];
 extern char topic_commands_version[50];
 extern char topic_commands_fota[50];
+extern char topic_commands_group[50];
 extern esp_mqtt_client_handle_t client;
+extern status_t status;
 
 static struct esp_ble_mesh_key
 {
@@ -82,9 +84,12 @@ prov_node_info_t prov_nodes[5] = {
         .evt = NONE_EVT,
         .model_app_bind = {
             .elem_index = 0,
-            .model_app_bind_flag = 0,
+            .model_app_bind_flag = false,
         },
-    },
+        .model_sub_add = {
+            .elem_index = 0,
+            .model_sub_add_flag = false,
+        }},
 };
 
 esp_ble_mesh_client_t config_client;
@@ -229,13 +234,24 @@ esp_err_t ble_mesh_store_prov_node_info(node_info_t *node, prov_event_t evt)
 {
     for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
     {
-        if (prov_nodes[i].node == node)
+        if (prov_nodes[i].node == node && prov_nodes[i].evt == evt)
         {
             ESP_LOGW(TAG, "%s: Already exist prov_node 0x%04x", __func__, node->unicast_node);
             return ESP_OK;
         }
-        else if (prov_nodes[i].node == NULL)
+        else if (prov_nodes[i].node == node && prov_nodes[i].evt != evt)
         {
+            // prov_nodes[i].node = node;
+            ESP_LOGW(TAG, "%s: Change event prov_node 0x%04x", __func__, node->unicast_node);
+            prov_nodes[i].evt = evt;
+            return ESP_OK;
+        }
+    }
+    for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
+    {
+        if (prov_nodes[i].node == NULL && prov_nodes[i].evt == NONE_EVT)
+        {
+            ESP_LOGW(TAG, "%s: Store prov_node 0x%04x", __func__, node->unicast_node);
             prov_nodes[i].node = node;
             prov_nodes[i].evt = evt;
             return ESP_OK;
@@ -260,8 +276,13 @@ prov_node_info_t *ble_mesh_get_prov_node_info(node_info_t *node)
 
 void ble_mesh_delete_prov_node_info(prov_node_info_t *prov_node)
 {
+    ESP_LOGW(TAG, "%s: Delete prov_node 0x%04x", __func__, prov_node->node->unicast_node);
     prov_node->node = NULL;
     prov_node->evt = NONE_EVT;
+    prov_node->model_app_bind.elem_index = 0;
+    prov_node->model_app_bind.model_app_bind_flag = false;
+    prov_node->model_sub_add.elem_index = 0;
+    prov_node->model_sub_add.model_sub_add_flag = false;
 }
 
 esp_err_t ble_mesh_read_prov_node_queue(void)
@@ -498,23 +519,40 @@ esp_err_t ble_mesh_app_bind(esp_ble_mesh_client_common_param_t *common, node_inf
     return ESP_OK;
 }
 
+esp_err_t ble_mesh_sub_add_group(esp_ble_mesh_client_common_param_t *common, node_info_t *node, uint16_t unicast_elem, esp_ble_mesh_model_t *model)
+{
+    esp_ble_mesh_cfg_client_set_state_t set_state = {0};
+    ble_mesh_set_msg_common(common, node->unicast_node, model, ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD);
+    set_state.model_sub_add.element_addr = unicast_elem;
+    set_state.model_sub_add.sub_addr = ONOFF_GROUP_ADDR;
+    set_state.model_sub_add.model_id = ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV;
+    set_state.model_sub_add.company_id = ESP_BLE_MESH_CID_NVAL;
+    esp_err_t err = esp_ble_mesh_config_client_set_state(common, &set_state);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to send Config Model Subscription Add");
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
 esp_err_t ble_mesh_deinit(void)
 {
-	esp_err_t err = ESP_OK;
-	esp_ble_mesh_deinit_param_t param;
-	param.erase_flash = false;
-	err = esp_ble_mesh_deinit(&param);
-	if (err == ESP_OK)
-	{
-		ESP_LOGW(TAG, "esp_ble_mesh_deinit success (err %d)", err);
-	}
-	else
-	{
-		ESP_LOGE(TAG, "esp_ble_mesh_deinit fail (err %d)", err);
-	}
-	esp_bluedroid_disable();
-	esp_bluedroid_deinit();
-	return err;
+    esp_err_t err = ESP_OK;
+    esp_ble_mesh_deinit_param_t param;
+    param.erase_flash = false;
+    err = esp_ble_mesh_deinit(&param);
+    if (err == ESP_OK)
+    {
+        ESP_LOGW(TAG, "esp_ble_mesh_deinit success (err %d)", err);
+    }
+    else
+    {
+        ESP_LOGE(TAG, "esp_ble_mesh_deinit fail (err %d)", err);
+    }
+    esp_bluedroid_disable();
+    esp_bluedroid_deinit();
+    return err;
 }
 static esp_err_t prov_complete(int node_idx, const esp_ble_mesh_octet16_t uuid,
                                uint16_t unicast, uint8_t elem_num, uint16_t net_idx)
@@ -701,7 +739,7 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
     int err;
 
     opcode = param->params->opcode;
-    addr = param->params->ctx.addr; // Element address
+    addr = param->params->ctx.addr;
 
     // ESP_LOGW(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
     //          __func__, param->error_code, event, param->params->ctx.addr, opcode);
@@ -726,7 +764,7 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         {
         case ESP_BLE_MESH_MODEL_OP_COMPOSITION_DATA_GET:
         {
-            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_COMPOSITION_DATA_GET");
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_COMPOSITION_DATA_GET: 0x%04x", addr);
             ESP_LOGW(TAG, "********************** Composition Data **********************");
             // ESP_LOGI(TAG, "Composition data %s", bt_hex(param->status_cb.comp_data_status.composition_data->data, param->status_cb.comp_data_status.composition_data->len));
             ble_mesh_store_composition_info(node, param->status_cb.comp_data_status.composition_data->data, node->elem_num);
@@ -763,19 +801,29 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
     case ESP_BLE_MESH_CFG_CLIENT_SET_STATE_EVT:
         switch (opcode)
         {
+        case ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD:
+        {
+            char group_payload[100] = {0};
+            prov_node_info_t *prov_node = ble_mesh_get_prov_node_info(node);
+            int index = prov_node->model_sub_add.elem_index;
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD: 0x%04x", prov_node->node->elem[index].unicast_elem);
+            prov_node->model_sub_add.model_sub_add_flag = true;
+            sprintf(group_payload, "{\"action\":\"add_group\",\"group_addr\":\"0x%04x\",\"unicast_addr\":%d}", ONOFF_GROUP_ADDR, prov_node->node->elem[index].unicast_elem);
+            if (status == NORMAL_MODE)
+                esp_mqtt_client_publish(client, topic_commands_group, group_payload, strlen(group_payload), 0, 0);
+            break;
+        }
         case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:
         {
-            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD");
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD: 0x%04x", addr);
             ble_mesh_store_prov_node_info(node, MODEL_APP_BIND_EVT);
             break;
         }
         case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
         {
-            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND");
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND: 0x%04x", param->status_cb.model_app_status.element_addr);
             prov_node_info_t *prov_node = ble_mesh_get_prov_node_info(node);
             prov_node->model_app_bind.model_app_bind_flag = true;
-            // ESP_LOGI(TAG, "Element Unicast Address :0x%04x", param->status_cb.model_app_status.element_addr);
-            esp_ble_mesh_client_common_param_t common;
             ble_mesh_onoff_get_state(&common, param->status_cb.model_app_status.element_addr, onoff_client.model);
             break;
         }
@@ -801,6 +849,7 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         {
         case ESP_BLE_MESH_MODEL_OP_COMPOSITION_DATA_GET:
         {
+            ESP_LOGW(TAG, "Get composition data timeout, unicast address: 0x%04x", addr);
             esp_ble_mesh_cfg_client_get_state_t get_state = {0};
             ble_mesh_set_msg_common(&common, node->unicast_node, config_client.model, ESP_BLE_MESH_MODEL_OP_COMPOSITION_DATA_GET);
             get_state.comp_data_get.page = COMP_DATA_PAGE_0;
@@ -814,6 +863,7 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         }
         case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:
         {
+            ESP_LOGW(TAG, "Add app key timeout, unicast address: 0x%04x", addr);
             esp_ble_mesh_cfg_client_set_state_t set_state = {0};
             ble_mesh_set_msg_common(&common, node->unicast_node, config_client.model, ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD);
             set_state.app_key_add.net_idx = prov_key.net_idx;
@@ -831,12 +881,20 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         {
             prov_node_info_t *prov_node = ble_mesh_get_prov_node_info(node);
             int index = prov_node->model_app_bind.elem_index;
-            esp_ble_mesh_client_common_param_t common;
             ble_mesh_app_bind(&common, node, prov_node->node->elem[index].unicast_elem, config_client.model);
-            ESP_LOGW(TAG, "Model App Bind timeout, unicast address: %04x", prov_node->node->elem[index].unicast_elem);
+            ESP_LOGW(TAG, "Model App Bind timeout, unicast address: 0x%04x", prov_node->node->elem[index].unicast_elem);
+            break;
+        }
+        case ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD:
+        {
+            prov_node_info_t *prov_node = ble_mesh_get_prov_node_info(node);
+            int index = prov_node->model_sub_add.elem_index;
+            ble_mesh_sub_add_group(&common, prov_node->node, prov_node->node->elem[index].unicast_elem, config_client.model);
+            ESP_LOGW(TAG, "Model Sub Add timeout, unicast address: 0x%04x", prov_node->node->elem[index].unicast_elem);
             break;
         }
         default:
+            ESP_LOGE(TAG, "%s, Event not handle", __func__);
             break;
         }
         break;
@@ -889,7 +947,8 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
             }
             onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
             sprintf(status_payload, "{\"action\":\"onoff\",\"status\":\"get\",\"unicast_addr\":%u,\"state\":%u}", addr, onoff_model->onoff_state);
-            esp_mqtt_client_publish(client, topic_commands_status, status_payload, strlen(status_payload), 0, 0);
+            if (status == NORMAL_MODE)
+                esp_mqtt_client_publish(client, topic_commands_status, status_payload, strlen(status_payload), 0, 0);
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET unicast: 0x%04x, onoff: 0x%02x", addr, onoff_model->onoff_state);
             break;
         }
@@ -912,7 +971,8 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
             }
             onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
             sprintf(status_payload, "{\"action\":\"onoff\",\"status\":\"set\",\"unicast_addr\":%u,\"state\":%u}", addr, onoff_model->onoff_state);
-            esp_mqtt_client_publish(client, topic_commands_status, status_payload, strlen(status_payload), 0, 0);
+            if (status == NORMAL_MODE)
+                esp_mqtt_client_publish(client, topic_commands_status, status_payload, strlen(status_payload), 0, 0);
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET unicast: 0x%04x, onoff: 0x%02x", addr, onoff_model->onoff_state);
             break;
         }
@@ -963,7 +1023,6 @@ esp_err_t ble_mesh_init(void)
     esp_ble_mesh_register_prov_callback(ble_mesh_provisioning_cb);
     esp_ble_mesh_register_config_client_callback(ble_mesh_config_client_cb);
     esp_ble_mesh_register_generic_client_callback(ble_mesh_generic_client_cb);
-
     err = esp_ble_mesh_init(&provision, &composition);
     if (err != ESP_OK)
     {
@@ -1009,7 +1068,6 @@ void prov_dev_task(void *param)
 {
     BaseType_t ret;
     prov_node_info_t *prov_node = NULL;
-    char nw_payload[100] = {0};
     esp_ble_mesh_client_common_param_t common;
     while (1)
     {
@@ -1019,6 +1077,7 @@ void prov_dev_task(void *param)
             prov_node = ble_mesh_read_prov_node_info();
             if (prov_node->evt == MODEL_APP_BIND_EVT)
             {
+                char nw_payload[100] = {0};
                 for (int i = 0; i < prov_node->node->elem_num; i++)
                 {
                     prov_node->model_app_bind.model_app_bind_flag = false;
@@ -1030,15 +1089,23 @@ void prov_dev_task(void *param)
                     }
                 }
                 sprintf(nw_payload, "{\"action\":\"join\",\"uuid\":\"%s\",\"unicast_addr\":%u,\"element_num\":%u}", bt_hex(prov_node->node->uuid, strlen((char *)prov_node->node->uuid)), prov_node->node->unicast_node, prov_node->node->elem_num);
-                esp_mqtt_client_publish(client, topic_commands_network, nw_payload, strlen(nw_payload), 0, 0);
-                ble_mesh_delete_prov_node_info(prov_node);
+                if (status == NORMAL_MODE)
+                    esp_mqtt_client_publish(client, topic_commands_network, nw_payload, strlen(nw_payload), 0, 0);
+                ble_mesh_store_prov_node_info(prov_node->node, MODEL_SUB_ADD_EVT);
             }
-            else if (prov_node->evt == MODEL_GET_STATE_EVT)
+            else if (prov_node->evt == MODEL_SUB_ADD_EVT)
             {
                 for (int i = 0; i < prov_node->node->elem_num; i++)
                 {
-                    ble_mesh_onoff_get_state(&common, prov_node->node->elem[i].unicast_elem, onoff_client.model);
+                    prov_node->model_sub_add.model_sub_add_flag = false;
+                    prov_node->model_sub_add.elem_index = i;
+                    ble_mesh_sub_add_group(&common, prov_node->node, prov_node->node->elem[i].unicast_elem, config_client.model);
+                    while (!prov_node->model_sub_add.model_sub_add_flag)
+                    {
+                        vTaskDelay(200 / portTICK_RATE_MS);
+                    }
                 }
+                ble_mesh_delete_prov_node_info(prov_node);
             }
             else
                 ESP_LOGE(TAG, "Prov node event wrong");

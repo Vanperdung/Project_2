@@ -67,7 +67,7 @@ typedef enum
 {
     NONE_EVT,
     MODEL_APP_BIND_EVT,
-    MODEL_GET_STATE_EVT,
+    MODEL_SUB_ADD_EVT,
 } prov_event_t;
 
 typedef struct 
@@ -78,9 +78,16 @@ typedef struct
 
 typedef struct 
 {
+    int elem_index;
+    bool model_sub_add_flag;
+} model_sub_add_t;
+
+typedef struct 
+{
     node_info_t *node;
     prov_event_t evt;
     model_app_bind_t model_app_bind;
+    model_sub_add_t model_sub_add;
 } prov_node_info_t;
 
 void prov_dev_task(void *param);
@@ -93,6 +100,7 @@ esp_err_t ble_mesh_onoff_get_state(esp_ble_mesh_client_common_param_t *common, u
 esp_err_t ble_mesh_set_msg_common(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem,
                                   esp_ble_mesh_model_t *client_model, uint32_t opcode);
 model_info_t *ble_mesh_get_model_info_with_model_id(uint16_t unicast, uint16_t model_id);
+esp_err_t ble_mesh_sub_add_group(esp_ble_mesh_client_common_param_t *common, node_info_t *node, uint16_t unicast_elem, esp_ble_mesh_model_t *model);
 elem_info_t *ble_mesh_get_elem_info_with_unicast(uint16_t unicast);
 node_info_t *ble_mesh_get_node_info_with_uuid(uint8_t *uuid);
 node_info_t *ble_mesh_get_node_info_with_unicast(uint16_t unicast);
