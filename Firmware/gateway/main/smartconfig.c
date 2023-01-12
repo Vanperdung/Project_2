@@ -49,7 +49,8 @@
 
 static const char *TAG = "SMARTCONFIG";
 static EventGroupHandle_t smartconfig_event_group;
-extern status_t status;
+extern status_red_t status_red;
+extern status_blue_t status_blue;
 
 static void smartconfig_task(void *param);
 

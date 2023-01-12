@@ -24,6 +24,7 @@
 #define LED_STATUS_RED GPIO_NUM_33
 #define LED_STATUS_BLUE GPIO_NUM_32
 
-void led_task(void *param);
+void led_red_task(void *param);
+void led_blue_task(void *param);
 
 #endif

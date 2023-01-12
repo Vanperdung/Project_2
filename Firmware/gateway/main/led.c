@@ -47,7 +47,8 @@
 #include "heartbeat.h"
 
 static const char *TAG = "LED";
-extern status_t status;
+extern status_red_t status_red;
+extern status_blue_t status_blue;
 
 void led_init(gpio_num_t gpio_num)
 {
@@ -61,17 +62,15 @@ void led_init(gpio_num_t gpio_num)
     gpio_set_level(gpio_num, LED_OFF);
 }
 
-void led_task(void *param)
+void led_red_task(void *param)
 {
     led_init(LED_STATUS_RED);
-    led_init(LED_STATUS_BLUE);
     while (1)
     {
-        switch (status)
+        switch (status_red)
         {
         case LOCAL_MODE:
             gpio_set_level(LED_STATUS_RED, LED_ON);
-            gpio_set_level(LED_STATUS_BLUE, LED_OFF);
             vTaskDelay(100 / portTICK_RATE_MS);
             gpio_set_level(LED_STATUS_RED, LED_OFF);
             vTaskDelay(100 / portTICK_RATE_MS);
@@ -82,26 +81,55 @@ void led_task(void *param)
             break;
         case NORMAL_MODE:
             gpio_set_level(LED_STATUS_RED, LED_ON);
-            gpio_set_level(LED_STATUS_BLUE, LED_OFF);
             vTaskDelay(100 / portTICK_RATE_MS);
             break;
-        case SMARTCONFIG:
+        default:
             gpio_set_level(LED_STATUS_RED, LED_OFF);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            break;
+        }
+    }
+}
+
+void led_blue_task(void *param)
+{
+    led_init(LED_STATUS_BLUE);
+    while (1)
+    {
+        switch (status_blue)
+        {
+        case POWER_ON_PROVISIONING:
+            gpio_set_level(LED_STATUS_BLUE, LED_ON);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_OFF);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_ON);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_OFF);
+            vTaskDelay(1000 / portTICK_RATE_MS);
+            break;
+        case SMARTCONFIG:
             gpio_set_level(LED_STATUS_BLUE, LED_ON);
             vTaskDelay(100 / portTICK_RATE_MS);
             gpio_set_level(LED_STATUS_BLUE, LED_OFF);
             vTaskDelay(100 / portTICK_RATE_MS);
             break;
         case FOTA:
-            gpio_set_level(LED_STATUS_RED, LED_ON);
             gpio_set_level(LED_STATUS_BLUE, LED_ON);
             vTaskDelay(500 / portTICK_RATE_MS);
             gpio_set_level(LED_STATUS_BLUE, LED_OFF);
             vTaskDelay(500 / portTICK_RATE_MS);
             break;
+        case PROVISIONING:
+            gpio_set_level(LED_STATUS_BLUE, LED_ON);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            break;
+        case NOT_STATE:
+            gpio_set_level(LED_STATUS_BLUE, LED_OFF);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            break;
         default:
             gpio_set_level(LED_STATUS_BLUE, LED_OFF);
-            gpio_set_level(LED_STATUS_RED, LED_OFF);
             vTaskDelay(100 / portTICK_RATE_MS);
             break;
         }

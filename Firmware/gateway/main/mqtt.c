@@ -56,7 +56,9 @@ extern char topic_commands_network[50];
 extern char topic_commands_process[50];
 extern char topic_commands_version[50];
 extern char topic_commands_fota[50];
-extern status_t status;
+extern char topic_commands_provision[50];
+extern status_red_t status_red;
+extern status_blue_t status_blue;
 extern node_info_t nodes[MAXIMUM_NODE];
 extern esp_ble_mesh_client_t config_client;
 extern esp_ble_mesh_client_t onoff_client;
@@ -71,17 +73,18 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     case MQTT_EVENT_CONNECTED:
     {
         char ver_json[50] = {0};
-        status = NORMAL_MODE;
+        status_red = NORMAL_MODE;
         ESP_LOGI(TAG, "MQTT event connected");
         esp_mqtt_client_subscribe(client, topic_commands_set, 0);
         esp_mqtt_client_subscribe(client, topic_commands_fota, 0);
         esp_mqtt_client_subscribe(client, topic_commands_get, 0);
+        esp_mqtt_client_subscribe(client, topic_commands_provision, 0);
         sprintf(ver_json, "{\"action\":\"version\",\"firm_ver\":\"%s\"}", version);
         esp_mqtt_client_publish(client, topic_commands_version, ver_json, strlen(ver_json), 0, 0);
         break;
     }
     case MQTT_EVENT_DISCONNECTED:
-        status = LOCAL_MODE;
+        status_red = LOCAL_MODE;
         ESP_LOGI(TAG, "MQTT event disconnected");
         break;
     case MQTT_EVENT_SUBSCRIBED:
@@ -147,6 +150,20 @@ static void mqtt_task(void *param)
                 ESP_LOGW(TAG, "Free heap size = %d, Min free heap size = %d", free_heap_size, min_free_heap_size);
                 ble_mesh_deinit();
                 xTaskCreate(&fota_task, "fota_task", 8192, mqtt_obj.url, 8, NULL);
+            }
+            else if (strcmp(mqtt_obj.action, "open") == 0)
+            {
+                status_blue = PROVISIONING;
+            }
+            else if (strcmp(mqtt_obj.action, "close") == 0)
+            {
+                status_blue = NOT_STATE;
+            }
+            else if (strcmp(mqtt_obj.action, "delete") == 0)
+            {
+            }
+            else if (strcmp(mqtt_obj.action, "set_timeout") == 0)
+            {
             }
             vRingbufferReturnItem(mqtt_ring_buf, (void *)mess_recv);
         }

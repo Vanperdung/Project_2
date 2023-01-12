@@ -62,8 +62,8 @@ esp_err_t mqtt_parse_data(char *mqtt_data, mqtt_obj_t *mqtt_obj)
                 mqtt_obj->state = cur_elem->valueint;
             else if (strcmp(cur_str, "unicast_addr") == 0)
                 mqtt_obj->unicast_addr = cur_elem->valueint;
-            else if (strcmp(cur_str, "model") == 0)
-                memcpy(mqtt_obj->model, cur_elem->valuestring, strlen(cur_elem->valuestring) + 1);
+            else if (strcmp(cur_str, "timeout") == 0)
+                mqtt_obj->timeout = cur_elem->valueint;
         }
     }
     cJSON_Delete(root);

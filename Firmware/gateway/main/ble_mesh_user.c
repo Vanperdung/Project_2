@@ -20,10 +20,11 @@
 
 #include "esp_ble_mesh_defs.h"
 #include "esp_ble_mesh_common_api.h"
-#include "esp_ble_mesh_provisioning_api.h"
 #include "esp_ble_mesh_networking_api.h"
+#include "esp_ble_mesh_provisioning_api.h"
 #include "esp_ble_mesh_config_model_api.h"
 #include "esp_ble_mesh_generic_model_api.h"
+#include "esp_ble_mesh_local_data_operation_api.h"
 #include "esp_log.h"
 #include "esp_bt.h"
 #include "esp_bt_main.h"
@@ -45,24 +46,28 @@
 #include "common.h"
 #include "spiffs_user.h"
 
-#define MODEL_APP_BIND_BIT BIT0
-#define GET_STATE_BIT BIT3
 #define ONOFF_GROUP_ADDR 0xC000
+#define HEARTBEAT_GROUP_ADDR 0xC001
 static const char *TAG = "BLE MESH USER";
-extern uint8_t dev_uuid[16];
-extern EventGroupHandle_t prov_evt_group;
 extern TaskHandle_t prov_dev_handle;
 extern char topic_commands_set[50];
 extern char topic_commands_get[50];
 extern char topic_commands_status[50];
-extern char topic_commands_heartbeat[50];
+extern char topic_commands_heartbeat_node[50];
+extern char topic_commands_heartbeat_gateway[50];
 extern char topic_commands_network[50];
 extern char topic_commands_process[50];
 extern char topic_commands_version[50];
 extern char topic_commands_fota[50];
 extern char topic_commands_group[50];
+extern char topic_commands_provision[50];
 extern esp_mqtt_client_handle_t client;
-extern status_t status;
+extern status_red_t status_red;
+extern status_blue_t status_blue;
+extern uint8_t dev_uuid[16];
+
+TimerHandle_t xTimer;
+char last_uuid_nw[160] = {0};
 
 static struct esp_ble_mesh_key
 {
@@ -76,20 +81,6 @@ node_info_t nodes[MAXIMUM_NODE] = {
         .unicast_node = ESP_BLE_MESH_ADDR_UNASSIGNED,
         .elem_num = 0,
     },
-};
-
-prov_node_info_t prov_nodes[5] = {
-    [0 ... 4] = {
-        .node = NULL,
-        .evt = NONE_EVT,
-        .model_app_bind = {
-            .elem_index = 0,
-            .model_app_bind_flag = false,
-        },
-        .model_sub_add = {
-            .elem_index = 0,
-            .model_sub_add_flag = false,
-        }},
 };
 
 esp_ble_mesh_client_t config_client;
@@ -151,10 +142,22 @@ void ble_mesh_get_dev_uuid(uint8_t *dev_uuid)
     memcpy(dev_uuid + 2, esp_bt_dev_get_address(), BD_ADDR_LEN);
 }
 
+void vTimerCallback(TimerHandle_t xTimer)
+{
+    if (status_blue == POWER_ON_PROVISIONING)
+    {
+        status_blue = NOT_STATE;
+    }
+    ESP_LOGW(TAG, "Stop provisioning");
+    xTimerStop(xTimer, 0);
+    xTimerDelete(xTimer, 0);
+}
+
 esp_err_t bluetooth_init(void)
 {
     esp_err_t ret;
-
+    xTimer = xTimerCreate("Timer", 30000 / portTICK_RATE_MS, pdFALSE, (void *)0, vTimerCallback);
+    xTimerStart(xTimer, 0);
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
@@ -184,22 +187,48 @@ esp_err_t bluetooth_init(void)
         return ret;
     }
 
+    ble_mesh_read_node_info_in_flash(UUID_NETWORK_FILE, last_uuid_nw);
+    ESP_LOGW(TAG, "Read node info in flash: %s", bt_hex(last_uuid_nw, strlen(last_uuid_nw)));
     return ret;
 }
 
-esp_err_t ble_mesh_store_node_info_in_flash(node_info_t *comp)
+esp_err_t ble_mesh_delete_node_info_in_flash(char *file_name)
 {
+    remove_file(file_name);
     return ESP_OK;
 }
 
-esp_err_t ble_mesh_restore_node_info_in_flash(node_info_t *comp)
+bool ble_mesh_read_node_info_in_flash(char *file_name, char *uuid_network)
 {
-    return ESP_OK;
+    read_from_file(file_name, uuid_network);
+    if (strlen(uuid_network) > 0)
+        return true;
+    return false;
 }
 
-esp_err_t ble_mesh_delete_node_info_in_flash(node_info_t *comp)
+void ble_mesh_store_node_info_in_flash(char *file_name)
 {
-    return ESP_OK;
+    int count = 0;
+    char *uuid_network = NULL;
+    ble_mesh_delete_node_info_in_flash(file_name);
+    for (int index = 0; index < ARRAY_SIZE(nodes); index++)
+    {
+        if (strlen((char *)nodes[index].uuid) > 0)
+        {
+            count++;
+        }
+    }
+    uuid_network = (char *)malloc((count + 1) * 16 + 1);
+    memset(uuid_network, '\0', (count + 1) * 16 + 1);
+    for (int index = 0; index < ARRAY_SIZE(nodes); index++)
+    {
+        if (strlen((char *)nodes[index].uuid) > 0)
+        {
+            strcat(uuid_network, (char *)nodes[index].uuid);
+        }
+    }
+    write_to_file(file_name, uuid_network);
+    free(uuid_network);
 }
 
 void decode_comp_data(node_info_t *comp, uint8_t *comp_data, int elem_num)
@@ -228,85 +257,6 @@ void decode_comp_data(node_info_t *comp, uint8_t *comp_data, int elem_num)
             }
         }
     }
-}
-
-esp_err_t ble_mesh_store_prov_node_info(node_info_t *node, prov_event_t evt)
-{
-    for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
-    {
-        if (prov_nodes[i].node == node && prov_nodes[i].evt == evt)
-        {
-            ESP_LOGW(TAG, "%s: Already exist prov_node 0x%04x", __func__, node->unicast_node);
-            return ESP_OK;
-        }
-        else if (prov_nodes[i].node == node && prov_nodes[i].evt != evt)
-        {
-            // prov_nodes[i].node = node;
-            ESP_LOGW(TAG, "%s: Change event prov_node 0x%04x", __func__, node->unicast_node);
-            prov_nodes[i].evt = evt;
-            return ESP_OK;
-        }
-    }
-    for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
-    {
-        if (prov_nodes[i].node == NULL && prov_nodes[i].evt == NONE_EVT)
-        {
-            ESP_LOGW(TAG, "%s: Store prov_node 0x%04x", __func__, node->unicast_node);
-            prov_nodes[i].node = node;
-            prov_nodes[i].evt = evt;
-            return ESP_OK;
-        }
-    }
-    ESP_LOGE(TAG, "%s: Full queue, can not add prov_node 0x%04x", __func__, node->unicast_node);
-    return ESP_FAIL;
-}
-
-prov_node_info_t *ble_mesh_get_prov_node_info(node_info_t *node)
-{
-    for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
-    {
-        if (prov_nodes[i].node == node)
-        {
-            return &prov_nodes[i];
-        }
-    }
-    ESP_LOGE(TAG, "Can not get prov node info");
-    return NULL;
-}
-
-void ble_mesh_delete_prov_node_info(prov_node_info_t *prov_node)
-{
-    ESP_LOGW(TAG, "%s: Delete prov_node 0x%04x", __func__, prov_node->node->unicast_node);
-    prov_node->node = NULL;
-    prov_node->evt = NONE_EVT;
-    prov_node->model_app_bind.elem_index = 0;
-    prov_node->model_app_bind.model_app_bind_flag = false;
-    prov_node->model_sub_add.elem_index = 0;
-    prov_node->model_sub_add.model_sub_add_flag = false;
-}
-
-esp_err_t ble_mesh_read_prov_node_queue(void)
-{
-    for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
-    {
-        if (prov_nodes[i].node != NULL)
-        {
-            return ESP_OK;
-        }
-    }
-    return ESP_FAIL;
-}
-
-prov_node_info_t *ble_mesh_read_prov_node_info(void)
-{
-    for (int i = 0; i < ARRAY_SIZE(prov_nodes); i++)
-    {
-        if (prov_nodes[i].node != NULL)
-        {
-            return &prov_nodes[i];
-        }
-    }
-    return NULL;
 }
 
 esp_err_t ble_mesh_store_node_info(const uint8_t uuid[16], uint16_t unicast, uint8_t elem_num)
@@ -347,21 +297,6 @@ esp_err_t ble_mesh_store_node_info(const uint8_t uuid[16], uint16_t unicast, uin
     }
 
     return ESP_FAIL;
-}
-
-void ble_mesh_get_number_node(void)
-{
-    int j = 1;
-    for (int i = 0; i < ARRAY_SIZE(nodes); i++)
-    {
-        if (strlen((char *)nodes[i].uuid))
-        {
-            ESP_LOGW(TAG, "Node %d: unicast node 0x%04x", j, nodes[i].unicast_node);
-            j++;
-        }
-    }
-    if (j == 1)
-        ESP_LOGW(TAG, "No node yet");
 }
 
 void ble_mesh_store_composition_info(node_info_t *comp, uint8_t *comp_data, int elem_num)
@@ -502,7 +437,7 @@ esp_err_t ble_mesh_onoff_set_state(esp_ble_mesh_client_common_param_t *common, u
     return ESP_OK;
 }
 
-esp_err_t ble_mesh_app_bind(esp_ble_mesh_client_common_param_t *common, node_info_t *node, uint16_t unicast_elem, esp_ble_mesh_model_t *model)
+esp_err_t ble_mesh_config_model_app_bind(esp_ble_mesh_client_common_param_t *common, node_info_t *node, uint16_t unicast_elem, esp_ble_mesh_model_t *model)
 {
     esp_ble_mesh_cfg_client_set_state_t set_state = {0};
     ble_mesh_set_msg_common(common, node->unicast_node, model, ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND);
@@ -519,7 +454,7 @@ esp_err_t ble_mesh_app_bind(esp_ble_mesh_client_common_param_t *common, node_inf
     return ESP_OK;
 }
 
-esp_err_t ble_mesh_sub_add_group(esp_ble_mesh_client_common_param_t *common, node_info_t *node, uint16_t unicast_elem, esp_ble_mesh_model_t *model)
+esp_err_t ble_mesh_config_sub_add(esp_ble_mesh_client_common_param_t *common, node_info_t *node, uint16_t unicast_elem, esp_ble_mesh_model_t *model)
 {
     esp_ble_mesh_cfg_client_set_state_t set_state = {0};
     ble_mesh_set_msg_common(common, node->unicast_node, model, ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD);
@@ -531,6 +466,47 @@ esp_err_t ble_mesh_sub_add_group(esp_ble_mesh_client_common_param_t *common, nod
     if (err != ESP_OK)
     {
         ESP_LOGE(TAG, "Failed to send Config Model Subscription Add");
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
+esp_err_t ble_mesh_config_heartbeat_pub_set(esp_ble_mesh_client_common_param_t *common, node_info_t *node, esp_ble_mesh_model_t *model)
+{
+    esp_ble_mesh_cfg_client_set_state_t set_state = {0};
+    ble_mesh_set_msg_common(common, node->unicast_node, model, ESP_BLE_MESH_MODEL_OP_HEARTBEAT_PUB_SET);
+    set_state.heartbeat_pub_set.dst = HEARTBEAT_GROUP_ADDR;
+    set_state.heartbeat_pub_set.count = 0xFF;
+    set_state.heartbeat_pub_set.period = 0x05;
+    set_state.heartbeat_pub_set.ttl = 5;
+    set_state.heartbeat_pub_set.feature = 0x0001;
+    set_state.heartbeat_pub_set.net_idx = prov_key.net_idx;
+    esp_err_t err = esp_ble_mesh_config_client_set_state(common, &set_state);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to send Config Heartbeat Publication Set");
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
+esp_err_t ble_mesh_config_pub_set(esp_ble_mesh_client_common_param_t *common, node_info_t *node, esp_ble_mesh_model_t *model)
+{
+    esp_ble_mesh_cfg_client_set_state_t set_state = {0};
+    ble_mesh_set_msg_common(common, node->unicast_node, model, ESP_BLE_MESH_MODEL_OP_MODEL_PUB_SET);
+    set_state.model_pub_set.element_addr = node->unicast_node;
+    set_state.model_pub_set.publish_addr = ONOFF_GROUP_ADDR;
+    set_state.model_pub_set.publish_app_idx = prov_key.app_idx;
+    set_state.model_pub_set.cred_flag = false;
+    set_state.model_pub_set.publish_ttl = 0xFF;
+    set_state.model_pub_set.publish_period = 0x00;
+    set_state.model_pub_set.publish_retransmit = 0x61;
+    set_state.model_pub_set.model_id = ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV;
+    set_state.model_pub_set.company_id = ESP_BLE_MESH_CID_NVAL;
+    esp_err_t err = esp_ble_mesh_config_client_set_state(common, &set_state);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to send Config Heartbeat Publication Set");
         return ESP_FAIL;
     }
     return ESP_OK;
@@ -589,6 +565,8 @@ static esp_err_t prov_complete(int node_idx, const esp_ble_mesh_octet16_t uuid,
         return ESP_FAIL;
     }
 
+    ble_mesh_store_node_info_in_flash(UUID_NETWORK_FILE);
+
     ESP_LOGW(TAG, "********************** Node Info **********************");
     ESP_LOGW(TAG, "Node index: 0x%02x, Unicast address: 0x%04x, Element num: %d, Netkey index: 0x%02x",
              node_idx, node->unicast_node, node->elem_num, net_idx);
@@ -627,33 +605,47 @@ static void recv_unprov_adv_pkt(uint8_t dev_uuid[16], uint8_t addr[BD_ADDR_LEN],
      * use this callback to report the devices, whose device UUID starts with 0xdd & 0xdd,
      * to the application layer.
      */
-
     // ESP_LOGI(TAG, "address: %s, address type: %d, adv type: %d", bt_hex(addr, BD_ADDR_LEN), addr_type, adv_type);
     // ESP_LOGI(TAG, "device uuid: %s", bt_hex(dev_uuid, 16));
     // ESP_LOGI(TAG, "oob info: %d, bearer: %s", oob_info, (bearer & ESP_BLE_MESH_PROV_ADV) ? "PB-ADV" : "PB-GATT");
 
-    memcpy(add_dev.addr, addr, BD_ADDR_LEN);
-    add_dev.addr_type = (uint8_t)addr_type;
-    memcpy(add_dev.uuid, dev_uuid, 16);
-    add_dev.oob_info = oob_info;
-    add_dev.bearer = (uint8_t)bearer;
     /* Note: If unprovisioned device adv packets have not been received, we should not add
              device with ADD_DEV_START_PROV_NOW_FLAG set. */
-    esp_ble_mesh_provisioner_add_unprov_dev(&add_dev,
-                                            ADD_DEV_RM_AFTER_PROV_FLAG | ADD_DEV_START_PROV_NOW_FLAG);
-    // if (err)
-    // {
-    //     ESP_LOGE(TAG, "%s: Add unprovisioned device into queue failed", __func__);
-    // }
-
+    if (status_blue == PROVISIONING)
+    {
+        memcpy(add_dev.addr, addr, BD_ADDR_LEN);
+        add_dev.addr_type = (uint8_t)addr_type;
+        memcpy(add_dev.uuid, dev_uuid, 16);
+        add_dev.oob_info = oob_info;
+        add_dev.bearer = (uint8_t)bearer;
+        esp_ble_mesh_provisioner_add_unprov_dev(&add_dev, ADD_DEV_RM_AFTER_PROV_FLAG | ADD_DEV_START_PROV_NOW_FLAG);
+    }
+    else if (status_blue == POWER_ON_PROVISIONING)
+    {
+        if (strstr(bt_hex(last_uuid_nw, strlen(last_uuid_nw)), bt_hex(dev_uuid, 8)) != NULL)
+        {
+            memcpy(add_dev.addr, addr, BD_ADDR_LEN);
+            add_dev.addr_type = (uint8_t)addr_type;
+            memcpy(add_dev.uuid, dev_uuid, 16);
+            add_dev.oob_info = oob_info;
+            add_dev.bearer = (uint8_t)bearer;
+            esp_ble_mesh_provisioner_add_unprov_dev(&add_dev, ADD_DEV_RM_AFTER_PROV_FLAG | ADD_DEV_START_PROV_NOW_FLAG);
+        }
+    }
+    // ESP_LOGW(TAG, "Free heap size: %d", esp_get_free_heap_size());
+    // ESP_LOGW(TAG, "Minimum free heap size: %d", esp_get_minimum_free_heap_size());
     return;
 }
 
 static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event,
                                      esp_ble_mesh_prov_cb_param_t *param)
 {
+    // ESP_LOGW(TAG, "%s, event = 0x%02x", __func__, event);
     switch (event)
     {
+    case ESP_BLE_MESH_PROV_REGISTER_COMP_EVT:
+        ESP_LOGI(TAG, "ESP_BLE_MESH_PROV_REGISTER_COMP_EVT");
+        break;
     case ESP_BLE_MESH_PROVISIONER_PROV_ENABLE_COMP_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_PROVISIONER_PROV_ENABLE_COMP_EVT, err_code %d", param->provisioner_prov_enable_comp.err_code);
         break;
@@ -706,8 +698,7 @@ static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event,
         {
             esp_err_t err = 0;
             prov_key.app_idx = param->provisioner_add_app_key_comp.app_idx;
-            err = esp_ble_mesh_provisioner_bind_app_key_to_local_model(PROV_OWN_ADDR, prov_key.app_idx,
-                                                                       ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_CLI, ESP_BLE_MESH_CID_NVAL);
+            err = esp_ble_mesh_provisioner_bind_app_key_to_local_model(PROV_OWN_ADDR, prov_key.app_idx, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_CLI, ESP_BLE_MESH_CID_NVAL);
             if (err != ESP_OK)
             {
                 ESP_LOGE(TAG, "Provisioner bind local model appkey failed");
@@ -721,11 +712,27 @@ static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event,
         break;
     case ESP_BLE_MESH_PROVISIONER_ENABLE_HEARTBEAT_RECV_COMP_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_PROVISIONER_ENABLE_HEARTBEAT_RECV_COMP_EVT, err_code %d", param->provisioner_enable_heartbeat_recv_comp.err_code);
-
+        break;
+    case ESP_BLE_MESH_PROVISIONER_RECV_HEARTBEAT_MESSAGE_EVT:
+    {
+        ESP_LOGI(TAG, "ESP_BLE_MESH_PROVISIONER_RECV_HEARTBEAT_MESSAGE_EVT");
+        ESP_LOGI(TAG, "hb_src: 0x%04x, hb_dst: 0x%04x, init_ttl: 0x%02x, rx_ttl: 0x%02x", param->provisioner_recv_heartbeat.hb_src, param->provisioner_recv_heartbeat.hb_dst, param->provisioner_recv_heartbeat.init_ttl, param->provisioner_recv_heartbeat.rx_ttl);
+        ESP_LOGI(TAG, "hops: 0x%02x, feature: 0x%04x, rssi: %d", param->provisioner_recv_heartbeat.hops, param->provisioner_recv_heartbeat.feature, (int)param->provisioner_recv_heartbeat.rssi);
+        if (status_red == NORMAL_MODE)
+        {
+            char hb_payload[200] = {0};
+            node_info_t *node = ble_mesh_get_node_info_with_unicast(param->provisioner_recv_heartbeat.hb_src);
+            sprintf(hb_payload, "{\"action\":\"hb_node\",\"uuid\":\"%s\",\"unicast_addr\":%d,\"rssi\":%d}", bt_hex(node->uuid, 8), (int)node->unicast_node, (int)param->provisioner_recv_heartbeat.rssi);
+            esp_mqtt_client_publish(client, topic_commands_heartbeat_node, hb_payload, strlen(hb_payload), 0, 0);
+        }
+        break;
+    }
+    case ESP_BLE_MESH_MODEL_SUBSCRIBE_GROUP_ADDR_COMP_EVT:
+        ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_SUBSCRIBE_GROUP_ADDR_COMP_EVT");
+        break;
     default:
         break;
     }
-
     return;
 }
 
@@ -801,30 +808,47 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
     case ESP_BLE_MESH_CFG_CLIENT_SET_STATE_EVT:
         switch (opcode)
         {
+        case ESP_BLE_MESH_MODEL_OP_MODEL_PUB_SET:
+        {
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_PUB_SET: 0x%04x", addr);
+            ble_mesh_config_heartbeat_pub_set(&common, node, config_client.model);
+            break;
+        }
         case ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD:
         {
-            char group_payload[100] = {0};
-            prov_node_info_t *prov_node = ble_mesh_get_prov_node_info(node);
-            int index = prov_node->model_sub_add.elem_index;
-            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD: 0x%04x", prov_node->node->elem[index].unicast_elem);
-            prov_node->model_sub_add.model_sub_add_flag = true;
-            sprintf(group_payload, "{\"action\":\"add_group\",\"group_addr\":\"0x%04x\",\"unicast_addr\":%d}", ONOFF_GROUP_ADDR, prov_node->node->elem[index].unicast_elem);
-            if (status == NORMAL_MODE)
-                esp_mqtt_client_publish(client, topic_commands_group, group_payload, strlen(group_payload), 0, 0);
+            // char group_payload[100] = {0};
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD: 0x%04x", addr);
+            // sprintf(group_payload, "{\"action\":\"add_group\",\"group_addr\":\"0x%04x\",\"unicast_addr\":%d}", ONOFF_GROUP_ADDR, addr);
+            // if (status == NORMAL_MODE)
+            //     esp_mqtt_client_publish(client, topic_commands_group, group_payload, strlen(group_payload), 0, 0);
             break;
         }
         case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:
         {
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD: 0x%04x", addr);
-            ble_mesh_store_prov_node_info(node, MODEL_APP_BIND_EVT);
+            ble_mesh_config_model_app_bind(&common, node, node->unicast_node, config_client.model);
             break;
         }
         case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
         {
-            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND: 0x%04x", param->status_cb.model_app_status.element_addr);
-            prov_node_info_t *prov_node = ble_mesh_get_prov_node_info(node);
-            prov_node->model_app_bind.model_app_bind_flag = true;
-            ble_mesh_onoff_get_state(&common, param->status_cb.model_app_status.element_addr, onoff_client.model);
+            char nw_payload[200] = {0};
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND: 0x%04x", addr);
+            // ble_mesh_config_sub_add(&common, node, node->unicast_node, config_client.model);
+            ble_mesh_config_pub_set(&common, node, config_client.model);
+            sprintf(nw_payload, "{\"action\":\"join\",\"uuid\":\"%s\",\"unicast_addr\":%d,\"type\":\"switch\",\"switch_num\":%d}", bt_hex(node->uuid, 8), node->unicast_node, node->elem_num);
+            if (status_red == NORMAL_MODE)
+                esp_mqtt_client_publish(client, topic_commands_network, nw_payload, strlen(nw_payload), 0, 0);
+            break;
+        }
+        case ESP_BLE_MESH_MODEL_OP_HEARTBEAT_PUB_SET:
+        {
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_HEARTBEAT_PUB_SET: 0x%04x", addr);
+            if (param->status_cb.heartbeat_pub_status.status == ESP_OK)
+            {
+                ESP_LOGI(TAG, "CfgClient:HeartBeatPubSet,OK,destination:0x%x,countlog:0x%x, periodlog:0x%x,ttl:0x%x,features:0x%x,net_idx: 0x%x",
+                         param->status_cb.heartbeat_pub_status.dst, param->status_cb.heartbeat_pub_status.count, param->status_cb.heartbeat_pub_status.period,
+                         param->status_cb.heartbeat_pub_status.ttl, param->status_cb.heartbeat_pub_status.features, param->status_cb.heartbeat_pub_status.net_idx);
+            }
             break;
         }
         default:
@@ -863,7 +887,7 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         }
         case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:
         {
-            ESP_LOGW(TAG, "Add app key timeout, unicast address: 0x%04x", addr);
+            ESP_LOGW(TAG, "Model add app key timeout, unicast address: 0x%04x", addr);
             esp_ble_mesh_cfg_client_set_state_t set_state = {0};
             ble_mesh_set_msg_common(&common, node->unicast_node, config_client.model, ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD);
             set_state.app_key_add.net_idx = prov_key.net_idx;
@@ -879,27 +903,27 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         }
         case ESP_BLE_MESH_MODEL_OP_MODEL_APP_BIND:
         {
-            prov_node_info_t *prov_node = ble_mesh_get_prov_node_info(node);
-            int index = prov_node->model_app_bind.elem_index;
-            ble_mesh_app_bind(&common, node, prov_node->node->elem[index].unicast_elem, config_client.model);
-            ESP_LOGW(TAG, "Model App Bind timeout, unicast address: 0x%04x", prov_node->node->elem[index].unicast_elem);
+            ble_mesh_config_model_app_bind(&common, node, node->unicast_node, config_client.model);
+            ESP_LOGW(TAG, "Model App Bind timeout, unicast address: 0x%04x", addr);
             break;
         }
         case ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD:
         {
-            prov_node_info_t *prov_node = ble_mesh_get_prov_node_info(node);
-            int index = prov_node->model_sub_add.elem_index;
-            ble_mesh_sub_add_group(&common, prov_node->node, prov_node->node->elem[index].unicast_elem, config_client.model);
-            ESP_LOGW(TAG, "Model Sub Add timeout, unicast address: 0x%04x", prov_node->node->elem[index].unicast_elem);
+            ble_mesh_config_sub_add(&common, node, node->unicast_node, config_client.model);
+            ESP_LOGW(TAG, "Model Sub Add timeout, unicast address: 0x%04x", addr);
+            break;
+        }
+        case ESP_BLE_MESH_MODEL_OP_HEARTBEAT_PUB_SET:
+        {
+            ble_mesh_config_heartbeat_pub_set(&common, node, config_client.model);
+            ESP_LOGW(TAG, "Model Heartbeat Publication Set timeout, unicast address: 0x%04x", addr);
             break;
         }
         default:
-            ESP_LOGE(TAG, "%s, Event not handle", __func__);
             break;
         }
         break;
     default:
-        ESP_LOGE(TAG, "Not a config client status message event");
         break;
     }
 }
@@ -912,9 +936,9 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
     uint16_t addr;
 
     opcode = param->params->opcode;
-    addr = param->params->ctx.addr; // Element address
+    addr = param->params->ctx.addr;
 
-    // ESP_LOGI(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
+    // ESP_LOGW(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
     //          __func__, param->error_code, event, param->params->ctx.addr, opcode);
 
     if (param->error_code)
@@ -938,7 +962,7 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET:
         {
             model_info_t *onoff_model = NULL;
-            char status_payload[200] = {0};
+            char get_payload[200] = {0};
             onoff_model = ble_mesh_get_model_info_with_model_id(param->params->ctx.addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
             if (!onoff_model)
             {
@@ -946,9 +970,9 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
                 return;
             }
             onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
-            sprintf(status_payload, "{\"action\":\"onoff\",\"status\":\"get\",\"unicast_addr\":%u,\"state\":%u}", addr, onoff_model->onoff_state);
-            if (status == NORMAL_MODE)
-                esp_mqtt_client_publish(client, topic_commands_status, status_payload, strlen(status_payload), 0, 0);
+            sprintf(get_payload, "{\"action\":\"onoff\",\"method\":\"get\",\"unicast_addr\":%u,\"state\":%u}", addr, onoff_model->onoff_state);
+            if (status_red == NORMAL_MODE)
+                esp_mqtt_client_publish(client, topic_commands_status, get_payload, strlen(get_payload), 0, 0);
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET unicast: 0x%04x, onoff: 0x%02x", addr, onoff_model->onoff_state);
             break;
         }
@@ -961,18 +985,17 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         {
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET:
         {
-            model_info_t *onoff_model = NULL;
-            char status_payload[200] = {0};
-            onoff_model = ble_mesh_get_model_info_with_model_id(addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
+            char set_payload[200] = {0};
+            model_info_t *onoff_model = ble_mesh_get_model_info_with_model_id(addr, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
             if (!onoff_model)
             {
                 ESP_LOGE(TAG, "%s: Get model info failed", __func__);
                 return;
             }
             onoff_model->onoff_state = param->status_cb.onoff_status.present_onoff;
-            sprintf(status_payload, "{\"action\":\"onoff\",\"status\":\"set\",\"unicast_addr\":%u,\"state\":%u}", addr, onoff_model->onoff_state);
-            if (status == NORMAL_MODE)
-                esp_mqtt_client_publish(client, topic_commands_status, status_payload, strlen(status_payload), 0, 0);
+            sprintf(set_payload, "{\"action\":\"onoff\",\"method\":\"set\",\"unicast_addr\":%u,\"state\":%u}", addr, onoff_model->onoff_state);
+            if (status_red == NORMAL_MODE)
+                esp_mqtt_client_publish(client, topic_commands_status, set_payload, strlen(set_payload), 0, 0);
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET unicast: 0x%04x, onoff: 0x%02x", addr, onoff_model->onoff_state);
             break;
         }
@@ -981,6 +1004,31 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         }
         break;
     case ESP_BLE_MESH_GENERIC_CLIENT_PUBLISH_EVT:
+        switch (opcode)
+        {
+        case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS:
+        {
+
+            char status_payload[200] = {0};
+            for (int index = 0; index < node->elem_num; index++)
+            {
+                model_info_t *onoff_model = ble_mesh_get_model_info_with_model_id(addr + index, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
+                if (!onoff_model)
+                {
+                    ESP_LOGE(TAG, "%s: Get model info failed", __func__);
+                    return;
+                }
+                onoff_model->onoff_state = (param->status_cb.onoff_status.present_onoff >> index) & 0x01;
+                sprintf(status_payload, "{\"action\":\"onoff\",\"method\":\"status\",\"unicast_addr\":%u,\"state\":%u}", addr + index, onoff_model->onoff_state);
+                if (status_red == NORMAL_MODE)
+                    esp_mqtt_client_publish(client, topic_commands_status, status_payload, strlen(status_payload), 0, 0);
+            }
+            ESP_LOGI(TAG, "ESP_BLE_MESH_GENERIC_CLIENT_PUBLISH_EVT STATUS, unicast: 0x%04x, state: 0x%02x", addr, param->status_cb.onoff_status.present_onoff);
+            break;
+        }
+        default:
+            break;
+        }
         break;
     case ESP_BLE_MESH_GENERIC_CLIENT_TIMEOUT_EVT:
         /* If failed to receive the responses, these messages will be resend */
@@ -1006,7 +1054,46 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         }
         break;
     default:
-        ESP_LOGE(TAG, "Not a generic client status message event");
+        break;
+    }
+}
+
+static void ble_mesh_custom_model_cb(esp_ble_mesh_model_cb_event_t event, esp_ble_mesh_model_cb_param_t *param)
+{
+    ESP_LOGW(TAG, "%s: event 0x%02x", __func__, event);
+    switch (event)
+    {
+    case ESP_BLE_MESH_MODEL_OPERATION_EVT:
+        ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OPERATION_EVT");
+        ESP_LOGW(TAG, "opcode: 0x%08x", param->model_operation.opcode);
+        break;
+    case ESP_BLE_MESH_MODEL_SEND_COMP_EVT:
+        ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_SEND_COMP_EVT");
+        ESP_LOGW(TAG, "opcode: 0x%08x", param->model_operation.opcode);
+        break;
+    case ESP_BLE_MESH_MODEL_PUBLISH_COMP_EVT:
+        ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_PUBLISH_COMP_EVT");
+        break;
+    case ESP_BLE_MESH_CLIENT_MODEL_RECV_PUBLISH_MSG_EVT:
+        ESP_LOGI(TAG, "ESP_BLE_MESH_CLIENT_MODEL_RECV_PUBLISH_MSG_EVT");
+        break;
+    case ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT:
+        ESP_LOGI(TAG, "ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT");
+        break;
+    case ESP_BLE_MESH_MODEL_PUBLISH_UPDATE_EVT:
+        ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_PUBLISH_UPDATE_EVT");
+        break;
+    case ESP_BLE_MESH_SERVER_MODEL_UPDATE_STATE_COMP_EVT:
+        ESP_LOGI(TAG, "ESP_BLE_MESH_SERVER_MODEL_UPDATE_STATE_COMP_EVT");
+        ESP_LOGW(TAG, "result %d, model id 0x%04x, type 0x%02x",
+                 param->server_model_update_state.err_code,
+                 param->server_model_update_state.model->model_id,
+                 param->server_model_update_state.type);
+        break;
+    case ESP_BLE_MESH_MODEL_EVT_MAX:
+        ESP_LOGE(TAG, "ESP_BLE_MESH_MODEL_EVT_MAX");
+        break;
+    default:
         break;
     }
 }
@@ -1023,6 +1110,8 @@ esp_err_t ble_mesh_init(void)
     esp_ble_mesh_register_prov_callback(ble_mesh_provisioning_cb);
     esp_ble_mesh_register_config_client_callback(ble_mesh_config_client_cb);
     esp_ble_mesh_register_generic_client_callback(ble_mesh_generic_client_cb);
+    esp_ble_mesh_register_custom_model_callback(ble_mesh_custom_model_cb);
+
     err = esp_ble_mesh_init(&provision, &composition);
     if (err != ESP_OK)
     {
@@ -1058,61 +1147,13 @@ esp_err_t ble_mesh_init(void)
         return err;
     }
 
+    err = esp_ble_mesh_model_subscribe_group_addr(esp_ble_mesh_get_primary_element_address(), BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_CLI, ONOFF_GROUP_ADDR);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to subscribe group address");
+    }
+
     ESP_LOGI(TAG, "BLE Mesh Provisioner initialized");
 
-    ble_mesh_get_number_node();
     return err;
-}
-
-void prov_dev_task(void *param)
-{
-    BaseType_t ret;
-    prov_node_info_t *prov_node = NULL;
-    esp_ble_mesh_client_common_param_t common;
-    while (1)
-    {
-        ret = ble_mesh_read_prov_node_queue();
-        if (ret == ESP_OK)
-        {
-            prov_node = ble_mesh_read_prov_node_info();
-            if (prov_node->evt == MODEL_APP_BIND_EVT)
-            {
-                char nw_payload[100] = {0};
-                for (int i = 0; i < prov_node->node->elem_num; i++)
-                {
-                    prov_node->model_app_bind.model_app_bind_flag = false;
-                    prov_node->model_app_bind.elem_index = i;
-                    ble_mesh_app_bind(&common, prov_node->node, prov_node->node->elem[i].unicast_elem, config_client.model);
-                    while (!prov_node->model_app_bind.model_app_bind_flag)
-                    {
-                        vTaskDelay(200 / portTICK_RATE_MS);
-                    }
-                }
-                sprintf(nw_payload, "{\"action\":\"join\",\"uuid\":\"%s\",\"unicast_addr\":%u,\"element_num\":%u}", bt_hex(prov_node->node->uuid, strlen((char *)prov_node->node->uuid)), prov_node->node->unicast_node, prov_node->node->elem_num);
-                if (status == NORMAL_MODE)
-                    esp_mqtt_client_publish(client, topic_commands_network, nw_payload, strlen(nw_payload), 0, 0);
-                ble_mesh_store_prov_node_info(prov_node->node, MODEL_SUB_ADD_EVT);
-            }
-            else if (prov_node->evt == MODEL_SUB_ADD_EVT)
-            {
-                for (int i = 0; i < prov_node->node->elem_num; i++)
-                {
-                    prov_node->model_sub_add.model_sub_add_flag = false;
-                    prov_node->model_sub_add.elem_index = i;
-                    ble_mesh_sub_add_group(&common, prov_node->node, prov_node->node->elem[i].unicast_elem, config_client.model);
-                    while (!prov_node->model_sub_add.model_sub_add_flag)
-                    {
-                        vTaskDelay(200 / portTICK_RATE_MS);
-                    }
-                }
-                ble_mesh_delete_prov_node_info(prov_node);
-            }
-            else
-                ESP_LOGE(TAG, "Prov node event wrong");
-        }
-        else
-        {
-            vTaskDelay(50 / portTICK_RATE_MS);
-        }
-    }
 }

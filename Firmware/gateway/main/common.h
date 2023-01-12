@@ -1,12 +1,12 @@
 /**
  * @file common.h
  * @author Vanperdung (dung.nv382001@gmail.com)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2022-12-26
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 
 #ifndef _COMMON_H_
@@ -26,9 +26,16 @@ typedef enum
 {
     LOCAL_MODE,
     NORMAL_MODE,
+} status_red_t;
+
+typedef enum
+{
+    NOT_STATE,
+    POWER_ON_PROVISIONING,
     SMARTCONFIG,
-    FOTA
-} status_t;
+    FOTA,
+    PROVISIONING,
+} status_blue_t;
 
 typedef struct
 {
@@ -36,7 +43,11 @@ typedef struct
     int unicast_addr;
     int state;
     char url[100];
-    char model[10];
+    // char uuid[16];
+    // char node_type[10];
+    // int switch_num;
+    // int runtime;
+    int timeout;
 } mqtt_obj_t;
 
 esp_err_t mqtt_parse_data(char *mqtt_data, mqtt_obj_t *mqtt_obj);

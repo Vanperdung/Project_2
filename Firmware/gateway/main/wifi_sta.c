@@ -45,7 +45,8 @@
 
 static const char *TAG = "WIFI";
 static EventGroupHandle_t wifi_event_group;
-extern status_t status;
+extern status_red_t status_red;
+extern status_blue_t status_blue;
 extern esp_mqtt_client_handle_t client;
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
@@ -53,13 +54,13 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
     {
         ESP_LOGI(TAG, "WiFi start connect to AP");
-        status = LOCAL_MODE;
+        status_red = LOCAL_MODE;
         esp_wifi_connect();
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         ESP_LOGI(TAG, "WiFi disconnected");
-        status = LOCAL_MODE;
+        status_red = LOCAL_MODE;
         esp_wifi_connect();
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED)

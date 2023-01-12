@@ -56,12 +56,16 @@ extern char version[10];
 extern char topic_commands_set[50];
 extern char topic_commands_get[50];
 extern char topic_commands_status[50];
-extern char topic_commands_heartbeat[50];
+extern char topic_commands_heartbeat_node[50];
+extern char topic_commands_heartbeat_gateway[50];
 extern char topic_commands_network[50];
 extern char topic_commands_process[50];
 extern char topic_commands_version[50];
 extern char topic_commands_fota[50];
-extern status_t status;
+extern char topic_commands_group[50];
+extern char topic_commands_provision[50];
+extern status_red_t status_red;
+extern status_blue_t status_blue;
 
 extern const uint8_t github_cert_pem_start[] asm("_binary_git_ota_pem_start");
 extern const uint8_t github_cert_pem_end[] asm("_binary_git_ota_pem_end");
@@ -100,7 +104,7 @@ void fota_task(void *param)
     char ota_url[100] = {0};
     strcpy(ota_url, (char *)param);
     ESP_LOGI(TAG, "FOTA start, url: %s", ota_url);
-    status = FOTA;
+    status_blue = FOTA;
     esp_http_client_config_t ota_cfg = {
         .url = ota_url,
         .event_handler = ota_event_handler,

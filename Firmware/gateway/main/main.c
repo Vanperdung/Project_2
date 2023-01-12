@@ -27,10 +27,11 @@
 
 #include "esp_ble_mesh_defs.h"
 #include "esp_ble_mesh_common_api.h"
-#include "esp_ble_mesh_provisioning_api.h"
 #include "esp_ble_mesh_networking_api.h"
+#include "esp_ble_mesh_provisioning_api.h"
 #include "esp_ble_mesh_config_model_api.h"
 #include "esp_ble_mesh_generic_model_api.h"
+#include "esp_ble_mesh_local_data_operation_api.h"
 #include "esp_log.h"
 #include "esp_bt.h"
 #include "esp_bt_main.h"
@@ -58,18 +59,20 @@
 
 static const char *TAG = "MAIN";
 RTC_NOINIT_ATTR int smartconfig_flag;
-char version[10] = "0.0.4";
+char version[10] = "0.0.5";
 char topic_commands_set[50] = "mandevices/commands/set";
 char topic_commands_get[50] = "mandevices/commands/get";
 char topic_commands_status[50] = "mandevices/commands/status";
-char topic_commands_heartbeat[50] = "mandevices/commands/heartbeat";
+char topic_commands_heartbeat_node[50] = "mandevices/commands/heartbeat/node";
+char topic_commands_heartbeat_gateway[50] = "mandevices/commands/heartbeat/gateway";
 char topic_commands_network[50] = "mandevices/commands/network";
 char topic_commands_process[50] = "mandevices/commands/process";
 char topic_commands_version[50] = "mandevices/commands/version";
 char topic_commands_fota[50] = "mandevices/commands/fota";
 char topic_commands_group[50] = "mandevices/commands/group";
-status_t status = LOCAL_MODE;
-EventGroupHandle_t prov_evt_group;
+char topic_commands_provision[50] = "mandevices/commands/provision";
+status_red_t status_red = LOCAL_MODE;
+status_blue_t status_blue = POWER_ON_PROVISIONING;
 TaskHandle_t prov_dev_handle;
 uint8_t dev_uuid[16];
 
@@ -90,8 +93,6 @@ void gateway_mesh_init(void)
     {
         ESP_LOGE(TAG, "Bluetooth mesh init failed (err %d)", err);
     }
-    prov_evt_group = xEventGroupCreate();
-    xTaskCreate(&prov_dev_task, "prov_dev_task", 4096, 10, NULL, &prov_dev_handle);
 }
 
 void app_main(void)
@@ -108,13 +109,14 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(err);
     mount_SPIFFS();
-    xTaskCreate(&led_task, "led_task", 2048, NULL, 5, NULL);
+    xTaskCreate(&led_red_task, "led_red_task", 2048, NULL, 5, NULL);
+    xTaskCreate(&led_blue_task, "led_blue_task", 2048, NULL, 5, NULL);
     xTaskCreate(&button_task, "button_task", 2048, NULL, 5, NULL);
     wifi_init();
     if (smartconfig_flag == ENABLE_SC)
     {
         smartconfig_flag = DISABLE_SC;
-        status = SMARTCONFIG;
+        status_blue = SMARTCONFIG;
         smartconfig_init();
     }
     else
