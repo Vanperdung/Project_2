@@ -39,7 +39,6 @@
 #include "button.h"
 #include "ble_mesh_user.h"
 #include "common.h"
-#include "heartbeat.h"
 
 static const char *TAG = "COMMON";
 

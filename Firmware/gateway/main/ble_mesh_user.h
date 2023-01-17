@@ -33,9 +33,16 @@
 #define OFF 0x0
 #define UNPROV_DEV_QUEUE_SIZE 10;
 #define UUID_NETWORK_FILE "uuid_network.txt"
+#define ESP_BLE_MESH_VND_MODEL_ID_CLIENT    0x0000
+#define ESP_BLE_MESH_VND_MODEL_ID_SERVER    0x0001
+
+#define ESP_BLE_MESH_VND_MODEL_OP_HB        ESP_BLE_MESH_MODEL_OP_3(0x02, CID_ESP)
+#define ESP_BLE_MESH_VND_MODEL_OP_SEND      ESP_BLE_MESH_MODEL_OP_3(0x00, CID_ESP)
+#define ESP_BLE_MESH_VND_MODEL_OP_STATUS    ESP_BLE_MESH_MODEL_OP_3(0x01, CID_ESP)
 
 typedef struct
 {
+    uint16_t company_id;
     uint16_t model_id;
     uint8_t model_name[20];
     uint8_t onoff_state;
@@ -48,7 +55,7 @@ typedef struct
     uint16_t loc;
     uint8_t numS;
     uint8_t numV;
-    model_info_t sig_models[10];
+    model_info_t models[10];
 } elem_info_t;
 
 typedef struct
@@ -84,5 +91,6 @@ esp_err_t ble_mesh_delete_node_info_in_flash(char *file_name);
 bool ble_mesh_read_node_info_in_flash(char *file_name, char *uuid_network);
 void ble_mesh_store_node_info_in_flash(char *file_name);
 esp_err_t ble_mesh_deinit(void);
+void hb_node_timer_cb(TimerHandle_t hb_node_timer);
 #endif
 

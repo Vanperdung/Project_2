@@ -40,6 +40,13 @@
 #define ON 1
 #define OFF 0
 
+#define ESP_BLE_MESH_VND_MODEL_ID_CLIENT    0x0000
+#define ESP_BLE_MESH_VND_MODEL_ID_SERVER    0x0001
+
+#define ESP_BLE_MESH_VND_MODEL_OP_HB        ESP_BLE_MESH_MODEL_OP_3(0x02, CID_ESP)
+#define ESP_BLE_MESH_VND_MODEL_OP_SEND      ESP_BLE_MESH_MODEL_OP_3(0x00, CID_ESP)
+#define ESP_BLE_MESH_VND_MODEL_OP_STATUS    ESP_BLE_MESH_MODEL_OP_3(0x01, CID_ESP)
+
 static const char *TAG = "MAIN";
 static uint8_t dev_uuid[16] = {0xdd, 0xdd};
 
@@ -106,8 +113,19 @@ static esp_ble_mesh_model_t extend_model_2[] = {
     ESP_BLE_MESH_MODEL_GEN_ONOFF_SRV(&onoff_pub_3, &onoff_server_3),
 };
 
+static esp_ble_mesh_model_op_t vnd_op[] = {
+    ESP_BLE_MESH_MODEL_OP(ESP_BLE_MESH_VND_MODEL_OP_SEND, 1),
+    ESP_BLE_MESH_MODEL_OP(ESP_BLE_MESH_VND_MODEL_OP_HB, 1);
+    ESP_BLE_MESH_MODEL_OP_END,
+};
+
+static esp_ble_mesh_model_t vnd_models[] = {
+    ESP_BLE_MESH_VENDOR_MODEL(CID_ESP, ESP_BLE_MESH_VND_MODEL_ID_SERVER,
+    vnd_op, NULL, NULL),
+};
+
 static esp_ble_mesh_elem_t elements[] = {
-    ESP_BLE_MESH_ELEMENT(0, root_models, ESP_BLE_MESH_MODEL_NONE),
+    ESP_BLE_MESH_ELEMENT(0, root_models, vnd_models),
     ESP_BLE_MESH_ELEMENT(0, extend_model_0, ESP_BLE_MESH_MODEL_NONE),
     ESP_BLE_MESH_ELEMENT(0, extend_model_1, ESP_BLE_MESH_MODEL_NONE),
     ESP_BLE_MESH_ELEMENT(0, extend_model_2, ESP_BLE_MESH_MODEL_NONE),
@@ -250,49 +268,15 @@ static void ble_mesh_handle_onoff_message(esp_ble_mesh_model_t *model, esp_ble_m
 
 void ble_mesh_bind_app_key(uint16_t app_idx)
 {
-    // ESP_ERROR_CHECK(esp_ble_mesh_node_bind_app_key_to_local_model(esp_ble_mesh_get_primary_element_address(), BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, app_idx));
+    ESP_ERROR_CHECK(esp_ble_mesh_node_bind_app_key_to_local_model(esp_ble_mesh_get_primary_element_address(), BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, app_idx));
     ESP_ERROR_CHECK(esp_ble_mesh_node_bind_app_key_to_local_model(esp_ble_mesh_get_primary_element_address() + 1, BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, app_idx));
     ESP_ERROR_CHECK(esp_ble_mesh_node_bind_app_key_to_local_model(esp_ble_mesh_get_primary_element_address() + 2, BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, app_idx));
     ESP_ERROR_CHECK(esp_ble_mesh_node_bind_app_key_to_local_model(esp_ble_mesh_get_primary_element_address() + 3, BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, app_idx));
 }
 
-// void ble_mesh_subscribe_group(uint16_t addr)
-// {
-//     ESP_ERROR_CHECK(esp_ble_mesh_model_subscribe_group_addr(esp_ble_mesh_get_primary_element_address(), BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, addr));
-//     ESP_ERROR_CHECK(esp_ble_mesh_model_subscribe_group_addr(esp_ble_mesh_get_primary_element_address() + 1, BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, addr));
-//     ESP_ERROR_CHECK(esp_ble_mesh_model_subscribe_group_addr(esp_ble_mesh_get_primary_element_address() + 2, BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, addr));
-//     ESP_ERROR_CHECK(esp_ble_mesh_model_subscribe_group_addr(esp_ble_mesh_get_primary_element_address() + 3, BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, addr));
-// }
-
 void ble_mesh_publish_state_msg(uint16_t publish_addr)
 {
     esp_ble_mesh_model_t *model = NULL;
-    // static int index = 0;
-    // if (index < 4)
-    // {
-    //     model = esp_ble_mesh_find_sig_model(&elements[index], ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
-    //     if (!model)
-    //     {
-    //         ESP_LOGE(TAG, "%s: Error find model", __func__);
-    //         return;
-    //     }
-    //     if(model->pub == NULL || model->pub->publish_addr == ESP_BLE_MESH_ADDR_UNASSIGNED)
-    //     {
-    //         model->pub->publish_addr = publish_addr;
-    //     }
-    //     esp_err_t err = esp_ble_mesh_model_publish(model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS, 1, (uint8_t *)&smart_switchs[index].current_state, ROLE_NODE);
-    //     if (err != ESP_OK)
-    //     {
-    //         ESP_LOGE(TAG, "%s: Error publish model", __func__);
-    //         return;
-    //     }
-    //     index++;
-    // }
-    // else
-    // {
-    //     index = 0;
-    // }
-
     uint8_t elem_count = esp_ble_mesh_get_element_count();
     // state = 0x0008 | 0x0007 | 0x0006 | 0x0005
     uint8_t state = (smart_switchs[elem_count - 1].current_state << 3) | (smart_switchs[elem_count - 2].current_state << 2) | (smart_switchs[elem_count - 3].current_state << 1) | (smart_switchs[elem_count - 4].current_state);
@@ -304,6 +288,7 @@ void ble_mesh_publish_state_msg(uint16_t publish_addr)
     }
     if (model->pub == NULL || model->pub->publish_addr == ESP_BLE_MESH_ADDR_UNASSIGNED)
     {
+        ESP_LOGW(TAG, "Signed publish address 0x%04x", publish_addr);
         model->pub->publish_addr = publish_addr;
     }
     esp_err_t err = esp_ble_mesh_model_publish(model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS, 1, &state, ROLE_NODE);
@@ -318,6 +303,7 @@ void ble_mesh_publish_state_msg(uint16_t publish_addr)
 static void ble_mesh_provisioning_cb(esp_ble_mesh_prov_cb_event_t event,
                                      esp_ble_mesh_prov_cb_param_t *param)
 {
+    ESP_LOGW(TAG, "%s: event 0x%02x", __func__, event);
     switch (event)
     {
     case ESP_BLE_MESH_PROV_REGISTER_COMP_EVT:
@@ -401,6 +387,7 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
 {
     if (event == ESP_BLE_MESH_CFG_SERVER_STATE_CHANGE_EVT)
     {
+        ESP_LOGW(TAG, "%s: event 0x%04x", __func__, param->ctx.recv_op);
         switch (param->ctx.recv_op)
         {
         case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:
@@ -426,7 +413,7 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                      param->value.state_change.mod_sub_add.sub_addr,
                      param->value.state_change.mod_sub_add.company_id,
                      param->value.state_change.mod_sub_add.model_id);
-            // ble_mesh_subscribe_group(param->value.state_change.mod_sub_add.sub_addr);
+            esp_ble_mesh_model_subscribe_group_addr(esp_ble_mesh_get_primary_element_address(), BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, param->value.state_change.mod_sub_add.sub_addr);
             break;
         case ESP_BLE_MESH_MODEL_OP_MODEL_PUB_SET:
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_PUB_SET");
@@ -439,7 +426,6 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
             ble_mesh_publish_state_msg(0xC000);
             break;
         default:
-            ESP_LOGW(TAG, "Unknown Config Server event 0x%04x", param->ctx.recv_op);
             break;
         }
     }
@@ -447,12 +433,19 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
 
 static void ble_mesh_custom_model_cb(esp_ble_mesh_model_cb_event_t event, esp_ble_mesh_model_cb_param_t *param)
 {
-    // ESP_LOGW(TAG, "%s: event 0x%02x", __func__, event);
+    ESP_LOGW(TAG, "%s: event 0x%02x", __func__, event);
     switch (event)
     {
     case ESP_BLE_MESH_MODEL_OPERATION_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OPERATION_EVT");
-        ESP_LOGW(TAG, "opcode: 0x%08x", param->model_operation.opcode);
+            if (param->model_operation.opcode == ESP_BLE_MESH_VND_MODEL_OP_SEND)
+            {
+
+            }
+            else if (param->model_operation.opcode == ESP_BLE_MESH_VND_MODEL_OP_HB)
+            {
+                ESP_LOGW(TAG, "Receive Gateway heartbeat");
+            }
         break;
     case ESP_BLE_MESH_MODEL_SEND_COMP_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_SEND_COMP_EVT");
@@ -464,6 +457,7 @@ static void ble_mesh_custom_model_cb(esp_ble_mesh_model_cb_event_t event, esp_bl
         break;
     case ESP_BLE_MESH_CLIENT_MODEL_RECV_PUBLISH_MSG_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_CLIENT_MODEL_RECV_PUBLISH_MSG_EVT");
+        ESP_LOGW(TAG, "msg: 0x%02x", *(param->client_recv_publish_msg.msg));
         break;
     case ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT");
@@ -555,6 +549,29 @@ static esp_err_t bluetooth_init(void)
     return ret;
 }
 
+void gpio_init_input(gpio_num_t num)
+{
+    gpio_config_t config_io;
+    config_io.intr_type = GPIO_INTR_DISABLE;
+    config_io.mode = GPIO_MODE_INPUT;
+    config_io.pull_up_en = GPIO_PULLUP_DISABLE;
+    config_io.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    config_io.pin_bit_mask = (1ULL << num);
+    gpio_config(&config_io);
+}
+
+// void touch_pad_task(void *param)
+// {
+//     gpio_init_input(GPIO_NUM_4);
+//     gpio_init_input(GPIO_NUM_21);
+//     gpio_init_input(GPIO_NUM_22);
+//     gpio_init_input(GPIO_NUM_23);
+//     while (1)
+//     {
+//         if()
+//     }
+// }
+
 void app_main(void)
 {
     esp_err_t ret = nvs_flash_init();
@@ -580,4 +597,5 @@ void app_main(void)
     {
         ESP_LOGE(TAG, "Bluetooth mesh init failed (err %d)", ret);
     }
+    // xTaskCreate(&touch_pad_task, "touch_pad_task", 8192, NULL, 10, NULL);
 }

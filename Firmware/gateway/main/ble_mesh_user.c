@@ -47,7 +47,8 @@
 #include "spiffs_user.h"
 
 #define ONOFF_GROUP_ADDR 0xC000
-#define HEARTBEAT_GROUP_ADDR 0xC001
+#define HEARTBEAT_NODE_GROUP_ADDR 0xC001
+#define HEARTBEAT_GATEWAY_GROUP_ADDR 0xC002
 static const char *TAG = "BLE MESH USER";
 extern TaskHandle_t prov_dev_handle;
 extern char topic_commands_set[50];
@@ -97,14 +98,35 @@ static esp_ble_mesh_cfg_srv_t config_server = {
     .relay_retransmit = ESP_BLE_MESH_TRANSMIT(2, 20),
 };
 
+static const esp_ble_mesh_client_op_pair_t vnd_op_pair[] = {
+    {ESP_BLE_MESH_VND_MODEL_OP_SEND, ESP_BLE_MESH_VND_MODEL_OP_STATUS},
+    {ESP_BLE_MESH_VND_MODEL_OP_HB, ESP_BLE_MESH_VND_MODEL_OP_STATUS},
+};
+
+static esp_ble_mesh_client_t vendor_client = {
+    .op_pair_size = ARRAY_SIZE(vnd_op_pair),
+    .op_pair = vnd_op_pair,
+};
+
+static esp_ble_mesh_model_op_t vnd_op[] = {
+    ESP_BLE_MESH_MODEL_OP(ESP_BLE_MESH_VND_MODEL_OP_STATUS, 1),
+    ESP_BLE_MESH_MODEL_OP_END,
+};
+
+ESP_BLE_MESH_MODEL_PUB_DEFINE(onoff_client_pub, 2 + 3, ROLE_PROVISIONER);
+
 static esp_ble_mesh_model_t root_models[] = {
     ESP_BLE_MESH_MODEL_CFG_SRV(&config_server),
     ESP_BLE_MESH_MODEL_CFG_CLI(&config_client),
-    ESP_BLE_MESH_MODEL_GEN_ONOFF_CLI(NULL, &onoff_client),
+    ESP_BLE_MESH_MODEL_GEN_ONOFF_CLI(&onoff_client_pub, &onoff_client),
+};
+
+static esp_ble_mesh_model_t vnd_models[] = {
+    ESP_BLE_MESH_VENDOR_MODEL(CID_ESP, ESP_BLE_MESH_VND_MODEL_ID_CLIENT, vnd_op, NULL, &vendor_client),
 };
 
 static esp_ble_mesh_elem_t elements[] = {
-    ESP_BLE_MESH_ELEMENT(0, root_models, ESP_BLE_MESH_MODEL_NONE),
+    ESP_BLE_MESH_ELEMENT(0, root_models, vnd_models),
 };
 
 static esp_ble_mesh_comp_t composition = {
@@ -151,6 +173,22 @@ void vTimerCallback(TimerHandle_t xTimer)
     ESP_LOGW(TAG, "Stop provisioning");
     xTimerStop(xTimer, 0);
     xTimerDelete(xTimer, 0);
+}
+
+void hb_node_timer_cb(TimerHandle_t hb_node_timer)
+{
+    uint8_t state = 0x01;
+    if (onoff_client.model->pub == NULL || onoff_client.model->pub->publish_addr == ESP_BLE_MESH_ADDR_UNASSIGNED)
+    {
+        ESP_LOGW(TAG, "Signed publish address 0x%04x", HEARTBEAT_GATEWAY_GROUP_ADDR);
+        onoff_client.model->pub->publish_addr = HEARTBEAT_GATEWAY_GROUP_ADDR;
+    }
+    esp_err_t err = esp_ble_mesh_model_publish(onoff_client.model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_GET, 1, &state, ROLE_PROVISIONER);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "%s: Error publish model", __func__);
+    }
+    ESP_LOGW(TAG, "Publish heartbeat, group address: 0x%04x", HEARTBEAT_GATEWAY_GROUP_ADDR);
 }
 
 esp_err_t bluetooth_init(void)
@@ -242,19 +280,27 @@ void decode_comp_data(node_info_t *comp, uint8_t *comp_data, int elem_num)
     pos = 10;
     for (int i = 0; i < elem_num; i++)
     {
+        int j = 0;
+        int k = 0;
         comp->elem[i].loc = (uint16_t)(comp_data[pos + 1] << 8 | comp_data[pos]);
         pos += 2;
         comp->elem[i].numS = comp_data[pos++];
         comp->elem[i].numV = comp_data[pos++];
-        for (int j = 0; j < comp->elem[i].numS; j++)
+        for (j = 0; j < comp->elem[i].numS; j++)
         {
-            comp->elem[i].sig_models[j].model_id = (uint16_t)(comp_data[pos + 1] << 8 | comp_data[pos]);
+            comp->elem[i].models[j].model_id = (uint16_t)(comp_data[pos + 1] << 8 | comp_data[pos]);
             pos += 2;
-            if (comp->elem[i].sig_models[j].model_id == ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV)
+            if (comp->elem[i].models[j].model_id == ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV)
             {
-                strcpy((char *)comp->elem[i].sig_models[j].model_name, "onoff_sv");
-                comp->elem[i].sig_models[j].onoff_state = OFF;
+                strcpy((char *)comp->elem[i].models[j].model_name, "onoff_sv");
+                comp->elem[i].models[j].onoff_state = OFF;
             }
+        }
+        for (k = 0; k < comp->elem[i].numV; k++)
+        {
+            comp->elem[i].models[j + k].company_id = (uint16_t)(comp_data[pos + 1] << 8 | comp_data[pos]);
+            comp->elem[i].models[j + k].model_id = (uint16_t)(comp_data[pos + 3] << 8 | comp_data[pos + 2]);
+            pos += 4;
         }
     }
 }
@@ -376,14 +422,43 @@ model_info_t *ble_mesh_get_model_info_with_model_id(uint16_t unicast, uint16_t m
 
     elem_info_t *elem = NULL;
     elem = ble_mesh_get_elem_info_with_unicast(unicast);
-    for (int i = 0; i < ARRAY_SIZE(elem->sig_models); i++)
+    for (int i = 0; i < ARRAY_SIZE(elem->models); i++)
     {
-        if (elem->sig_models[i].model_id == model_id)
+        if (elem->models[i].model_id == model_id)
         {
-            return &elem->sig_models[i];
+            return &elem->models[i];
         }
     }
     return NULL;
+}
+
+void ble_mesh_send_vendor_message_timeout(esp_ble_mesh_msg_ctx_t *ctx, uint8_t state, uint32_t opcode)
+{
+    esp_err_t err = esp_ble_mesh_client_model_send_msg(vendor_client.model, ctx, opcode, sizeof(state), &state, MSG_TIMEOUT, true, MSG_ROLE);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to send vendor message 0x%06x", opcode);
+        return;
+    }
+}
+
+void ble_mesh_send_vendor_message(node_info_t *node, uint8_t state, uint32_t opcode, bool need_rsp)
+{
+    esp_ble_mesh_msg_ctx_t ctx = {0};
+    uint32_t opcode;
+    esp_err_t err;
+    ctx.net_idx = prov_key.net_idx;
+    ctx.app_idx = prov_key.app_idx;
+    ctx.addr = node->unicast_node;
+    ctx.send_ttl = MSG_SEND_TTL;
+    ctx.send_rel = MSG_SEND_REL;
+
+    err = esp_ble_mesh_client_model_send_msg(vendor_client.model, &ctx, opcode, sizeof(state), &state, MSG_TIMEOUT, need_rsp, MSG_ROLE);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to send vendor message 0x%06x", opcode);
+        return;
+    }
 }
 
 esp_err_t ble_mesh_set_msg_common(esp_ble_mesh_client_common_param_t *common, uint16_t unicast_elem,
@@ -459,9 +534,9 @@ esp_err_t ble_mesh_config_sub_add(esp_ble_mesh_client_common_param_t *common, no
     esp_ble_mesh_cfg_client_set_state_t set_state = {0};
     ble_mesh_set_msg_common(common, node->unicast_node, model, ESP_BLE_MESH_MODEL_OP_MODEL_SUB_ADD);
     set_state.model_sub_add.element_addr = unicast_elem;
-    set_state.model_sub_add.sub_addr = ONOFF_GROUP_ADDR;
-    set_state.model_sub_add.model_id = ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV;
-    set_state.model_sub_add.company_id = ESP_BLE_MESH_CID_NVAL;
+    set_state.model_sub_add.sub_addr = HEARTBEAT_GATEWAY_GROUP_ADDR;
+    set_state.model_sub_add.model_id = ESP_BLE_MESH_VND_MODEL_ID_SERVER;
+    set_state.model_sub_add.company_id = CID_ESP;
     esp_err_t err = esp_ble_mesh_config_client_set_state(common, &set_state);
     if (err != ESP_OK)
     {
@@ -475,12 +550,28 @@ esp_err_t ble_mesh_config_heartbeat_pub_set(esp_ble_mesh_client_common_param_t *
 {
     esp_ble_mesh_cfg_client_set_state_t set_state = {0};
     ble_mesh_set_msg_common(common, node->unicast_node, model, ESP_BLE_MESH_MODEL_OP_HEARTBEAT_PUB_SET);
-    set_state.heartbeat_pub_set.dst = HEARTBEAT_GROUP_ADDR;
+    set_state.heartbeat_pub_set.dst = HEARTBEAT_NODE_GROUP_ADDR;
     set_state.heartbeat_pub_set.count = 0xFF;
     set_state.heartbeat_pub_set.period = 0x05;
     set_state.heartbeat_pub_set.ttl = 5;
     set_state.heartbeat_pub_set.feature = 0x0001;
     set_state.heartbeat_pub_set.net_idx = prov_key.net_idx;
+    esp_err_t err = esp_ble_mesh_config_client_set_state(common, &set_state);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to send Config Heartbeat Publication Set");
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
+esp_err_t ble_mesh_config_heartbeat_sub_set(esp_ble_mesh_client_common_param_t *common, node_info_t *node, esp_ble_mesh_model_t *model)
+{
+    esp_ble_mesh_cfg_client_set_state_t set_state = {0};
+    ble_mesh_set_msg_common(common, node->unicast_node, model, ESP_BLE_MESH_MODEL_OP_HEARTBEAT_SUB_SET);
+    set_state.heartbeat_sub_set.src = PROV_OWN_ADDR;
+    set_state.heartbeat_sub_set.dst = node->unicast_node;
+    set_state.heartbeat_sub_set.period = 0x05;
     esp_err_t err = esp_ble_mesh_config_client_set_state(common, &set_state);
     if (err != ESP_OK)
     {
@@ -748,8 +839,8 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
     opcode = param->params->opcode;
     addr = param->params->ctx.addr;
 
-    // ESP_LOGW(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
-    //          __func__, param->error_code, event, param->params->ctx.addr, opcode);
+    ESP_LOGW(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
+             __func__, param->error_code, event, param->params->ctx.addr, opcode);
 
     if (param->error_code)
     {
@@ -784,7 +875,7 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
                          node->elem[i].unicast_elem, node->elem[i].loc, node->elem[i].numS, node->elem[i].numV);
                 for (uint8_t j = 0; j < node->elem[i].numS; j++)
                 {
-                    ESP_LOGW(TAG, "            MODEL %u, ID: 0x%04x", j, node->elem[i].sig_models[j].model_id);
+                    ESP_LOGW(TAG, "            MODEL %u, ID: 0x%04x", j, node->elem[i].models[j].model_id);
                 }
             }
             ESP_LOGW(TAG, "**************************************************************");
@@ -843,12 +934,13 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         case ESP_BLE_MESH_MODEL_OP_HEARTBEAT_PUB_SET:
         {
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_HEARTBEAT_PUB_SET: 0x%04x", addr);
-            if (param->status_cb.heartbeat_pub_status.status == ESP_OK)
-            {
-                ESP_LOGI(TAG, "CfgClient:HeartBeatPubSet,OK,destination:0x%x,countlog:0x%x, periodlog:0x%x,ttl:0x%x,features:0x%x,net_idx: 0x%x",
-                         param->status_cb.heartbeat_pub_status.dst, param->status_cb.heartbeat_pub_status.count, param->status_cb.heartbeat_pub_status.period,
-                         param->status_cb.heartbeat_pub_status.ttl, param->status_cb.heartbeat_pub_status.features, param->status_cb.heartbeat_pub_status.net_idx);
-            }
+            // ble_mesh_config_heartbeat_sub_set(&common, node, config_client.model);
+            ble_mesh_config_sub_add(&common, node, node->unicast_node, config_client.model);
+            break;
+        }
+        case ESP_BLE_MESH_MODEL_OP_HEARTBEAT_SUB_SET:
+        {
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_HEARTBEAT_SUB_SET: 0x%04x", addr);
             break;
         }
         default:
@@ -919,6 +1011,12 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
             ESP_LOGW(TAG, "Model Heartbeat Publication Set timeout, unicast address: 0x%04x", addr);
             break;
         }
+        case ESP_BLE_MESH_MODEL_OP_HEARTBEAT_SUB_SET:
+        {
+            ble_mesh_config_heartbeat_sub_set(&common, node, config_client.model);
+            ESP_LOGW(TAG, "Model Heartbeat Subscription Set timeout, unicast address: 0x%04x", addr);
+            break;
+        }
         default:
             break;
         }
@@ -938,8 +1036,8 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
     opcode = param->params->opcode;
     addr = param->params->ctx.addr;
 
-    // ESP_LOGW(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
-    //          __func__, param->error_code, event, param->params->ctx.addr, opcode);
+    ESP_LOGW(TAG, "%s, error_code = 0x%02x, event = 0x%02x, addr: 0x%04x, opcode: 0x%04x",
+             __func__, param->error_code, event, param->params->ctx.addr, opcode);
 
     if (param->error_code)
     {
@@ -1008,7 +1106,6 @@ static void ble_mesh_generic_client_cb(esp_ble_mesh_generic_client_cb_event_t ev
         {
         case ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS:
         {
-
             char status_payload[200] = {0};
             for (int index = 0; index < node->elem_num; index++)
             {
@@ -1069,7 +1166,8 @@ static void ble_mesh_custom_model_cb(esp_ble_mesh_model_cb_event_t event, esp_bl
         break;
     case ESP_BLE_MESH_MODEL_SEND_COMP_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_SEND_COMP_EVT");
-        ESP_LOGW(TAG, "opcode: 0x%08x", param->model_operation.opcode);
+        if (param->model_send_comp.err_code)
+            ESP_LOGE(TAG, "Failed to send message 0x%06x", param->model_send_comp.opcode);
         break;
     case ESP_BLE_MESH_MODEL_PUBLISH_COMP_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_PUBLISH_COMP_EVT");
@@ -1078,8 +1176,12 @@ static void ble_mesh_custom_model_cb(esp_ble_mesh_model_cb_event_t event, esp_bl
         ESP_LOGI(TAG, "ESP_BLE_MESH_CLIENT_MODEL_RECV_PUBLISH_MSG_EVT");
         break;
     case ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT:
+    {
         ESP_LOGI(TAG, "ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT");
+        if (param->client_send_timeout.opcode == )
+        ble_mesh_send_vendor_message_timeout(param->client_send_timeout.ctx, );
         break;
+    }
     case ESP_BLE_MESH_MODEL_PUBLISH_UPDATE_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_PUBLISH_UPDATE_EVT");
         break;

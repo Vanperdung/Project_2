@@ -59,7 +59,7 @@
 
 static const char *TAG = "MAIN";
 RTC_NOINIT_ATTR int smartconfig_flag;
-char version[10] = "0.0.5";
+char version[10] = "0.1.0";
 char topic_commands_set[50] = "mandevices/commands/set";
 char topic_commands_get[50] = "mandevices/commands/get";
 char topic_commands_status[50] = "mandevices/commands/status";
@@ -75,6 +75,9 @@ status_red_t status_red = LOCAL_MODE;
 status_blue_t status_blue = POWER_ON_PROVISIONING;
 TaskHandle_t prov_dev_handle;
 uint8_t dev_uuid[16];
+TimerHandle_t hb_gateway_timer;
+TimerHandle_t hb_node_timer;
+esp_mqtt_client_handle_t client;
 
 void gateway_mesh_init(void)
 {
@@ -95,6 +98,18 @@ void gateway_mesh_init(void)
     }
 }
 
+void hb_gateway_timer_cb(TimerHandle_t hb_gateway_timer)
+{
+    static int sec = 0;
+    char buf[50] = {0};
+    if(status_red == NORMAL_MODE)
+    {
+        sec += 30;
+        sprintf(buf, "{\"action\":\"hb_gateway\",\"runtime\":%d}", sec);
+        esp_mqtt_client_publish(client, topic_commands_heartbeat_gateway, buf, strlen(buf), 0, 0);
+    }
+}
+
 void app_main(void)
 {
     esp_err_t err;
@@ -108,6 +123,10 @@ void app_main(void)
         err = nvs_flash_init();
     }
     ESP_ERROR_CHECK(err);
+    hb_gateway_timer = xTimerCreate("Heartbeat Gateway", 30000 / portTICK_RATE_MS, pdTRUE, (void *)0, hb_gateway_timer_cb);
+    xTimerStart(hb_gateway_timer, 0);
+    hb_node_timer = xTimerCreate("Heartbeat Node", 30000 / portTICK_RATE_MS, pdTRUE, (void *)0, hb_node_timer_cb);
+    xTimerStart(hb_node_timer, 0);
     mount_SPIFFS();
     xTaskCreate(&led_red_task, "led_red_task", 2048, NULL, 5, NULL);
     xTaskCreate(&led_blue_task, "led_blue_task", 2048, NULL, 5, NULL);

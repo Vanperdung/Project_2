@@ -40,7 +40,7 @@
 #include "smartconfig.h"
 #include "led.h"
 #include "common.h"
-#include "heartbeat.h"
+
 
 static const char *TAG = "BUTTON";
 extern RTC_NOINIT_ATTR int smartconfig_flag;
