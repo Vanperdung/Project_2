@@ -1162,7 +1162,7 @@ static void ble_mesh_custom_model_cb(esp_ble_mesh_model_cb_event_t event, esp_bl
     {
     case ESP_BLE_MESH_MODEL_OPERATION_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OPERATION_EVT");
-        ESP_LOGW(TAG, "opcode: 0x%08x", param->model_operation.opcode);
+        ESP_LOGW(TAG, "opcode: 0x%06x, msg: 0x%02x", param->model_operation.opcode, *(param->model_operation.msg));
         break;
     case ESP_BLE_MESH_MODEL_SEND_COMP_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_SEND_COMP_EVT");
@@ -1179,6 +1179,7 @@ static void ble_mesh_custom_model_cb(esp_ble_mesh_model_cb_event_t event, esp_bl
     {
         uint8_t state;
         ESP_LOGI(TAG, "ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT");
+        ESP_LOGI(TAG, "opcode: 0x%06x", param->client_send_timeout.opcode)
         if (param->client_send_timeout.opcode == ESP_BLE_MESH_VND_MODEL_OP_SEND)
         {
             state = 0x02;
