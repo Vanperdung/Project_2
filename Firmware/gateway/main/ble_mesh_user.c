@@ -1177,9 +1177,18 @@ static void ble_mesh_custom_model_cb(esp_ble_mesh_model_cb_event_t event, esp_bl
         break;
     case ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT:
     {
+        uint8_t state;
         ESP_LOGI(TAG, "ESP_BLE_MESH_CLIENT_MODEL_SEND_TIMEOUT_EVT");
-        if (param->client_send_timeout.opcode == )
-        ble_mesh_send_vendor_message_timeout(param->client_send_timeout.ctx, );
+        if (param->client_send_timeout.opcode == ESP_BLE_MESH_VND_MODEL_OP_SEND)
+        {
+            state = 0x02;
+            ble_mesh_send_vendor_message_timeout(param->client_send_timeout.ctx, state, param->client_send_timeout.opcode);
+        }
+        else if (param->client_send_timeout.opcode == ESP_BLE_MESH_VND_MODEL_OP_HB)
+        {
+            state = 0x01;
+            ble_mesh_send_vendor_message_timeout(param->client_send_timeout.ctx, state, param->client_send_timeout.opcode);
+        }
         break;
     }
     case ESP_BLE_MESH_MODEL_PUBLISH_UPDATE_EVT:
