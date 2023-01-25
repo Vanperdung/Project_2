@@ -102,9 +102,9 @@ void hb_gateway_timer_cb(TimerHandle_t hb_gateway_timer)
 {
     static int sec = 0;
     char buf[50] = {0};
+    sec += 30;
     if(status_red == NORMAL_MODE)
     {
-        sec += 30;
         sprintf(buf, "{\"action\":\"hb_gateway\",\"runtime\":%d}", sec);
         esp_mqtt_client_publish(client, topic_commands_heartbeat_gateway, buf, strlen(buf), 0, 0);
     }
@@ -125,7 +125,7 @@ void app_main(void)
     ESP_ERROR_CHECK(err);
     hb_gateway_timer = xTimerCreate("Heartbeat Gateway", 30000 / portTICK_RATE_MS, pdTRUE, (void *)0, hb_gateway_timer_cb);
     xTimerStart(hb_gateway_timer, 0);
-    hb_node_timer = xTimerCreate("Heartbeat Node", 30000 / portTICK_RATE_MS, pdTRUE, (void *)0, hb_node_timer_cb);
+    hb_node_timer = xTimerCreate("Heartbeat Node", 10000 / portTICK_RATE_MS, pdTRUE, (void *)0, hb_node_timer_cb);
     xTimerStart(hb_node_timer, 0);
     mount_SPIFFS();
     xTaskCreate(&led_red_task, "led_red_task", 2048, NULL, 5, NULL);

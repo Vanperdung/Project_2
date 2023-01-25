@@ -15,6 +15,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "freertos/queue.h"
+#include "freertos/ringbuf.h"
+#include "freertos/semphr.h"
+
 #include "esp_log.h"
 #include "esp_bt.h"
 #include "esp_bt_main.h"
@@ -40,28 +47,50 @@
 #define ON 1
 #define OFF 0
 
-#define ESP_BLE_MESH_VND_MODEL_ID_CLIENT    0x0000
-#define ESP_BLE_MESH_VND_MODEL_ID_SERVER    0x0001
+#define ESP_BLE_MESH_VND_MODEL_ID_CLIENT 0x0000
+#define ESP_BLE_MESH_VND_MODEL_ID_SERVER 0x0001
 
-#define ESP_BLE_MESH_VND_MODEL_OP_HB        ESP_BLE_MESH_MODEL_OP_3(0x02, CID_ESP)
-#define ESP_BLE_MESH_VND_MODEL_OP_SEND      ESP_BLE_MESH_MODEL_OP_3(0x00, CID_ESP)
-#define ESP_BLE_MESH_VND_MODEL_OP_STATUS    ESP_BLE_MESH_MODEL_OP_3(0x01, CID_ESP)
+#define ESP_BLE_MESH_VND_MODEL_OP_HB ESP_BLE_MESH_MODEL_OP_3(0x02, CID_ESP)
+#define ESP_BLE_MESH_VND_MODEL_OP_SEND ESP_BLE_MESH_MODEL_OP_3(0x00, CID_ESP)
+#define ESP_BLE_MESH_VND_MODEL_OP_STATUS ESP_BLE_MESH_MODEL_OP_3(0x01, CID_ESP)
+
+#define HOLD_TIME (3000 / portTICK_RATE_MS)
+#define CLICK_TIME (100 / portTICK_RATE_MS)
 
 static const char *TAG = "MAIN";
 static uint8_t dev_uuid[16] = {0xdd, 0xdd};
+
+TimerHandle_t hb_gateway_timer;
+
+typedef struct
+{
+    uint32_t time_up;
+    uint32_t time_down;
+    uint32_t deltaT;
+    bool time_evt_act;
+} time_evt_t;
 
 typedef struct
 {
     uint8_t current_state;
     uint8_t target_state;
-    uint8_t pin;
+    gpio_num_t relay_pin;
+    gpio_num_t touch_pad_pin;
+    time_evt_t time_evt;
+} smart_relay_t;
+
+typedef struct
+{
+    smart_relay_t relays[4];
+    int hb_gate_count;
 } smart_switch_t;
 
-smart_switch_t smart_switchs[4] = {
-    [0] = {.pin = GPIO_NUM_19, .current_state = ON},
-    [1] = {.pin = GPIO_NUM_18, .current_state = ON},
-    [2] = {.pin = GPIO_NUM_17, .current_state = ON},
-    [3] = {.pin = GPIO_NUM_16, .current_state = ON},
+smart_switch_t smart_switch = {
+    .hb_gate_count = 0,
+    .relays[0] = {.relay_pin = GPIO_NUM_19, .touch_pad_pin = GPIO_NUM_4},
+    .relays[1] = {.relay_pin = GPIO_NUM_18, .touch_pad_pin = GPIO_NUM_21},
+    .relays[2] = {.relay_pin = GPIO_NUM_17, .touch_pad_pin = GPIO_NUM_22},
+    .relays[3] = {.relay_pin = GPIO_NUM_16, .touch_pad_pin = GPIO_NUM_23},
 };
 
 static esp_ble_mesh_cfg_srv_t config_server = {
@@ -114,14 +143,13 @@ static esp_ble_mesh_model_t extend_model_2[] = {
 };
 
 static esp_ble_mesh_model_op_t vnd_op[] = {
-    ESP_BLE_MESH_MODEL_OP(ESP_BLE_MESH_VND_MODEL_OP_SEND, 1),
-    ESP_BLE_MESH_MODEL_OP(ESP_BLE_MESH_VND_MODEL_OP_HB, 1);
+    ESP_BLE_MESH_MODEL_OP(ESP_BLE_MESH_VND_MODEL_OP_SEND, 0),
+    ESP_BLE_MESH_MODEL_OP(ESP_BLE_MESH_VND_MODEL_OP_HB, 0),
     ESP_BLE_MESH_MODEL_OP_END,
 };
 
 static esp_ble_mesh_model_t vnd_models[] = {
-    ESP_BLE_MESH_VENDOR_MODEL(CID_ESP, ESP_BLE_MESH_VND_MODEL_ID_SERVER,
-    vnd_op, NULL, NULL),
+    ESP_BLE_MESH_VENDOR_MODEL(CID_ESP, ESP_BLE_MESH_VND_MODEL_ID_SERVER, vnd_op, NULL, NULL),
 };
 
 static esp_ble_mesh_elem_t elements[] = {
@@ -180,17 +208,38 @@ void ble_mesh_get_dev_uuid(uint8_t *dev_uuid)
 
 void relay_change_output(uint8_t index, uint8_t state)
 {
-    if (smart_switchs[index].current_state != state)
+    if (smart_switch.relays[index].current_state != state)
     {
-        gpio_set_level((gpio_num_t)smart_switchs[index].pin, state);
-        smart_switchs[index].current_state = state;
+        gpio_set_level((gpio_num_t)smart_switch.relays[index].relay_pin, state);
+        smart_switch.relays[index].current_state = state;
     }
+}
+
+void hb_gateway_timer_cb(TimerHandle_t hb_gateway_timer)
+{
+    if (smart_switch.hb_gate_count == 0)
+    {
+        ESP_LOGW(TAG, "Gateway offline");
+        esp_ble_mesh_node_local_reset();
+        esp_err_t err = esp_ble_mesh_node_prov_enable(ESP_BLE_MESH_PROV_ADV | ESP_BLE_MESH_PROV_GATT);
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(TAG, "Failed to enable mesh node (err %d)", err);
+            return;
+        }
+        xTimerStop(hb_gateway_timer, 0);
+        xTimerDelete(hb_gateway_timer, 0);
+    }
+    else
+        smart_switch.hb_gate_count = 0;
 }
 
 static void prov_complete(uint16_t net_idx, uint16_t addr, uint8_t flags, uint32_t iv_index)
 {
     ESP_LOGI(TAG, "net_idx: 0x%04x, addr: 0x%04x", net_idx, addr);
     ESP_LOGI(TAG, "flags: 0x%02x, iv_index: 0x%08x", flags, iv_index);
+    hb_gateway_timer = xTimerCreate("Heartbeat Gateway", 30000 / portTICK_RATE_MS, pdTRUE, (void *)0, hb_gateway_timer_cb);
+    xTimerStart(hb_gateway_timer, 0);
 }
 
 static void ble_mesh_change_state(esp_ble_mesh_model_t *model, esp_ble_mesh_msg_ctx_t *ctx, uint8_t state)
@@ -268,7 +317,7 @@ static void ble_mesh_handle_onoff_message(esp_ble_mesh_model_t *model, esp_ble_m
 
 void ble_mesh_bind_app_key(uint16_t app_idx)
 {
-    ESP_ERROR_CHECK(esp_ble_mesh_node_bind_app_key_to_local_model(esp_ble_mesh_get_primary_element_address(), BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, app_idx));
+    ESP_ERROR_CHECK(esp_ble_mesh_node_bind_app_key_to_local_model(esp_ble_mesh_get_primary_element_address(), CID_ESP, ESP_BLE_MESH_VND_MODEL_ID_SERVER, app_idx));
     ESP_ERROR_CHECK(esp_ble_mesh_node_bind_app_key_to_local_model(esp_ble_mesh_get_primary_element_address() + 1, BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, app_idx));
     ESP_ERROR_CHECK(esp_ble_mesh_node_bind_app_key_to_local_model(esp_ble_mesh_get_primary_element_address() + 2, BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, app_idx));
     ESP_ERROR_CHECK(esp_ble_mesh_node_bind_app_key_to_local_model(esp_ble_mesh_get_primary_element_address() + 3, BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, app_idx));
@@ -279,7 +328,7 @@ void ble_mesh_publish_state_msg(uint16_t publish_addr)
     esp_ble_mesh_model_t *model = NULL;
     uint8_t elem_count = esp_ble_mesh_get_element_count();
     // state = 0x0008 | 0x0007 | 0x0006 | 0x0005
-    uint8_t state = (smart_switchs[elem_count - 1].current_state << 3) | (smart_switchs[elem_count - 2].current_state << 2) | (smart_switchs[elem_count - 3].current_state << 1) | (smart_switchs[elem_count - 4].current_state);
+    uint8_t state = (smart_switch.relays[elem_count - 1].current_state << 3) | (smart_switch.relays[elem_count - 2].current_state << 2) | (smart_switch.relays[elem_count - 3].current_state << 1) | (smart_switch.relays[elem_count - 4].current_state);
     model = esp_ble_mesh_find_sig_model(&elements[0], ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV);
     if (!model)
     {
@@ -413,7 +462,7 @@ static void ble_mesh_config_server_cb(esp_ble_mesh_cfg_server_cb_event_t event,
                      param->value.state_change.mod_sub_add.sub_addr,
                      param->value.state_change.mod_sub_add.company_id,
                      param->value.state_change.mod_sub_add.model_id);
-            esp_ble_mesh_model_subscribe_group_addr(esp_ble_mesh_get_primary_element_address(), BLE_MESH_CID_NVAL, ESP_BLE_MESH_MODEL_ID_GEN_ONOFF_SRV, param->value.state_change.mod_sub_add.sub_addr);
+            esp_ble_mesh_model_subscribe_group_addr(esp_ble_mesh_get_primary_element_address(), param->value.state_change.mod_sub_add.company_id, ESP_BLE_MESH_VND_MODEL_ID_SERVER, param->value.state_change.mod_sub_add.sub_addr);
             break;
         case ESP_BLE_MESH_MODEL_OP_MODEL_PUB_SET:
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_MODEL_PUB_SET");
@@ -438,18 +487,19 @@ static void ble_mesh_custom_model_cb(esp_ble_mesh_model_cb_event_t event, esp_bl
     {
     case ESP_BLE_MESH_MODEL_OPERATION_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OPERATION_EVT");
-            if (param->model_operation.opcode == ESP_BLE_MESH_VND_MODEL_OP_SEND)
-            {
-
-            }
-            else if (param->model_operation.opcode == ESP_BLE_MESH_VND_MODEL_OP_HB)
-            {
-                ESP_LOGW(TAG, "Receive Gateway heartbeat");
-            }
+        if (param->model_operation.opcode == ESP_BLE_MESH_VND_MODEL_OP_SEND)
+        {
+            ESP_LOGW(TAG, "ESP_BLE_MESH_VND_MODEL_OP_SEND");
+        }
+        else if (param->model_operation.opcode == ESP_BLE_MESH_VND_MODEL_OP_HB)
+        {
+            ESP_LOGW(TAG, "ESP_BLE_MESH_VND_MODEL_OP_HB");
+            smart_switch.hb_gate_count++;
+        }
         break;
     case ESP_BLE_MESH_MODEL_SEND_COMP_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_SEND_COMP_EVT");
-        ESP_LOGW(TAG, "opcode: 0x%08x", param->model_operation.opcode);
+        ESP_LOGW(TAG, "opcode: 0x%06x", param->model_operation.opcode);
         break;
     case ESP_BLE_MESH_MODEL_PUBLISH_COMP_EVT:
         ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_PUBLISH_COMP_EVT");
@@ -549,28 +599,69 @@ static esp_err_t bluetooth_init(void)
     return ret;
 }
 
-void gpio_init_input(gpio_num_t num)
+void gpio_init(void)
 {
-    gpio_config_t config_io;
-    config_io.intr_type = GPIO_INTR_DISABLE;
-    config_io.mode = GPIO_MODE_INPUT;
-    config_io.pull_up_en = GPIO_PULLUP_DISABLE;
-    config_io.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    config_io.pin_bit_mask = (1ULL << num);
-    gpio_config(&config_io);
+    for (int i = 0; i < 4; i++)
+    {
+        gpio_config_t input_cfg;
+        input_cfg.intr_type = GPIO_INTR_DISABLE;
+        input_cfg.mode = GPIO_MODE_INPUT;
+        input_cfg.pull_up_en = GPIO_PULLUP_DISABLE;
+        input_cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
+        input_cfg.pin_bit_mask = (1ULL << smart_switch.relays[i].touch_pad_pin);
+        gpio_config(&input_cfg);
+
+        gpio_config_t output_cfg;
+        output_cfg.intr_type = GPIO_INTR_DISABLE;
+        output_cfg.mode = GPIO_MODE_OUTPUT;
+        output_cfg.pull_up_en = GPIO_PULLUP_DISABLE;
+        output_cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
+        output_cfg.pin_bit_mask = (1ULL << smart_switch.relays[i].relay_pin);
+        gpio_config(&output_cfg);
+
+        gpio_num_t num = (gpio_num_t)(smart_switch.relays[i].relay_pin & 0x1F);
+        smart_switch.relays[i].current_state = (GPIO_REG_READ(GPIO_OUT_REG) >> num) & 1U;
+    }
 }
 
-// void touch_pad_task(void *param)
-// {
-//     gpio_init_input(GPIO_NUM_4);
-//     gpio_init_input(GPIO_NUM_21);
-//     gpio_init_input(GPIO_NUM_22);
-//     gpio_init_input(GPIO_NUM_23);
-//     while (1)
-//     {
-//         if()
-//     }
-// }
+void touch_pad_task(void *param)
+{
+    gpio_init();
+    while (1)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            if (gpio_get_level(smart_switch.relays[i].touch_pad_pin) == ON)
+            {
+                if (smart_switch.relays[i].time_evt.time_up == 0)
+                    smart_switch.relays[i].time_evt.time_up = (uint32_t)xTaskGetTickCount() / portTICK_RATE_MS;
+                else
+                { 
+                    smart_switch.relays[i].time_evt.deltaT = (uint32_t)xTaskGetTickCount() / portTICK_RATE_MS - smart_switch.relays[i].time_evt.time_up;
+                    if(smart_switch.relays[i].time_evt.time_evt_act == false && smart_switch.relays[i].time_evt.deltaT > HOLD_TIME)
+                    {
+                        smart_switch.relays[i].time_evt.time_evt_act = true;
+                        //
+                    }
+                }
+            }
+            else if (gpio_get_level(smart_switch.relays[i].touch_pad_pin) == OFF && smart_switch.relays[i].time_evt.time_up != 0 && smart_switch.relays[i].time_evt.deltaT > CLICK_TIME)
+            {
+                smart_switch.relays[i].time_evt.time_down = (uint32_t)xTaskGetTickCount() / portTICK_RATE_MS;
+                ESP_LOGI(TAG, "Change state in gpio num %d", smart_switch.relays[i].relay_pin);
+                gpio_set_level(smart_switch.relays[i].relay_pin, (uint32_t)(1 - smart_switch.relays[i].current_state));
+                smart_switch.relays[i].current_state = 1 - smart_switch.relays[i].current_state;
+                memset(&smart_switch.relays[i].time_evt, 0, sizeof(smart_switch.relays[i].time_evt));
+                ble_mesh_publish_state_msg(0xC000);
+            }
+            else if(gpio_get_level(smart_switch.relays[i].touch_pad_pin) == OFF)
+            {
+                memset(&smart_switch.relays[i].time_evt, 0, sizeof(smart_switch.relays[i].time_evt));
+            }
+        }
+        vTaskDelay(10 / portTICK_RATE_MS);
+    }
+}
 
 void app_main(void)
 {
@@ -597,5 +688,6 @@ void app_main(void)
     {
         ESP_LOGE(TAG, "Bluetooth mesh init failed (err %d)", ret);
     }
-    // xTaskCreate(&touch_pad_task, "touch_pad_task", 8192, NULL, 10, NULL);
+
+    xTaskCreate(&touch_pad_task, "touch_pad_task", 8192, NULL, 10, NULL);
 }

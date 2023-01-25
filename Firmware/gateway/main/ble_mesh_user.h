@@ -92,5 +92,8 @@ bool ble_mesh_read_node_info_in_flash(char *file_name, char *uuid_network);
 void ble_mesh_store_node_info_in_flash(char *file_name);
 esp_err_t ble_mesh_deinit(void);
 void hb_node_timer_cb(TimerHandle_t hb_node_timer);
+void ble_mesh_send_vendor_message(node_info_t *node, uint8_t state, uint32_t opcode, bool need_rsp);
+void ble_mesh_send_vendor_message_timeout(esp_ble_mesh_msg_ctx_t *ctx, uint8_t state, uint32_t opcode);
+void ble_mesh_send_vendor_message_all(uint8_t state, uint32_t opcode, bool need_rsp);
 #endif
 
