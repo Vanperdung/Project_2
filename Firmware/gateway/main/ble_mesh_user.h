@@ -95,5 +95,6 @@ void hb_node_timer_cb(TimerHandle_t hb_node_timer);
 void ble_mesh_send_vendor_message(node_info_t *node, uint8_t state, uint32_t opcode, bool need_rsp);
 void ble_mesh_send_vendor_message_timeout(esp_ble_mesh_msg_ctx_t *ctx, uint8_t state, uint32_t opcode);
 void ble_mesh_send_vendor_message_all(uint8_t state, uint32_t opcode, bool need_rsp);
+esp_err_t ble_mesh_config_node_reset(esp_ble_mesh_client_common_param_t *common, node_info_t *node, esp_ble_mesh_model_t *model);
 #endif
 

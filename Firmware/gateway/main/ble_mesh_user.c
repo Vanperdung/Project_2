@@ -609,6 +609,19 @@ esp_err_t ble_mesh_config_pub_set(esp_ble_mesh_client_common_param_t *common, no
     return ESP_OK;
 }
 
+esp_err_t ble_mesh_config_node_reset(esp_ble_mesh_client_common_param_t *common, node_info_t *node, esp_ble_mesh_model_t *model)
+{
+    esp_ble_mesh_cfg_client_set_state_t set_state = {0};
+    ble_mesh_set_msg_common(common, node->unicast_node, model, ESP_BLE_MESH_MODEL_OP_NODE_RESET);
+    esp_err_t err = esp_ble_mesh_config_client_set_state(common, &set_state);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to send Config Heartbeat Publication Set");
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
 esp_err_t ble_mesh_deinit(void)
 {
     esp_err_t err = ESP_OK;
@@ -960,6 +973,12 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
             ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_HEARTBEAT_SUB_SET: 0x%04x", addr);
             break;
         }
+        case ESP_BLE_MESH_MODEL_OP_NODE_RESET:
+        {
+            // esp_ble_mesh_provisioner_delete_node_with_addr(node->unicast_node);
+            ESP_LOGI(TAG, "ESP_BLE_MESH_MODEL_OP_NODE_RESET: 0x%04x", addr);
+            break;
+        }
         default:
             break;
         }
@@ -1032,6 +1051,12 @@ static void ble_mesh_config_client_cb(esp_ble_mesh_cfg_client_cb_event_t event,
         {
             ble_mesh_config_heartbeat_sub_set(&common, node, config_client.model);
             ESP_LOGW(TAG, "Model Heartbeat Subscription Set timeout, unicast address: 0x%04x", addr);
+            break;
+        }
+        case ESP_BLE_MESH_MODEL_OP_NODE_RESET:
+        {
+            // ble_mesh_config_node_reset(&common, node, config_client.model);
+            ESP_LOGW(TAG, "Config Node Reset timeout, unicast address: 0x%04x", addr);
             break;
         }
         default:

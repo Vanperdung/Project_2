@@ -161,7 +161,9 @@ static void mqtt_task(void *param)
             }
             else if (strcmp(mqtt_obj.action, "delete") == 0)
             {
-                esp_ble_mesh_provisioner_delete_node_with_addr(mqtt_obj.unicast_addr);
+                esp_ble_mesh_client_common_param_t common = {0};
+                node_info_t *node = ble_mesh_get_node_info_with_unicast(mqtt_obj.unicast_addr);
+                ble_mesh_config_node_reset(&common, node, config_client.model);
             }
             else if (strcmp(mqtt_obj.action, "set_timeout") == 0)
             {
