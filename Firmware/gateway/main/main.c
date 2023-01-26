@@ -58,7 +58,7 @@
 #include "spiffs_user.h"
 
 static const char *TAG = "MAIN";
-RTC_NOINIT_ATTR int smartconfig_flag;
+RTC_NOINIT_ATTR int gateway_mode_flag;
 char version[10] = "0.1.0";
 char topic_commands_set[50] = "mandevices/commands/set";
 char topic_commands_get[50] = "mandevices/commands/get";
@@ -132,11 +132,17 @@ void app_main(void)
     xTaskCreate(&led_blue_task, "led_blue_task", 2048, NULL, 5, NULL);
     xTaskCreate(&button_task, "button_task", 2048, NULL, 5, NULL);
     wifi_init();
-    if (smartconfig_flag == ENABLE_SC)
+    if (gateway_mode_flag == SMARTCONFIG_MODE)
     {
-        smartconfig_flag = DISABLE_SC;
+        gateway_mode_flag = NORMAL_MODE;
         status_blue = SMARTCONFIG;
         smartconfig_init();
+    }
+    else if(gateway_mode_flag == WIFI_SOFTAP_MODE)
+    {
+        gateway_mode_flag = NORMAL_MODE;
+        status_blue = WIFI_SOFTAP;
+        //
     }
     else
     {

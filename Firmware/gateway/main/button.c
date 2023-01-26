@@ -43,7 +43,7 @@
 
 
 static const char *TAG = "BUTTON";
-extern RTC_NOINIT_ATTR int smartconfig_flag;
+extern RTC_NOINIT_ATTR int gateway_mode_flag;
 void button_task(void *param)
 {
     TickType_t pre_tick = 0;
@@ -72,7 +72,7 @@ void button_task(void *param)
             if (config.time_down >= (config.time_set / portTICK_RATE_MS))
             {
                 ESP_LOGI(TAG, "Trigger smartconfig");
-                smartconfig_flag = ENABLE_SC;
+                gateway_mode_flag = SMARTCONFIG_MODE;
                 esp_restart();
             }
         }

@@ -19,8 +19,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define ENABLE_SC 11
-#define DISABLE_SC 20
+#define NORMAL_MODE 11
+#define SMARTCONFIG_MODE 20
+#define WIFI_SOFTAP_MODE 31
 
 typedef enum
 {
@@ -35,6 +36,7 @@ typedef enum
     SMARTCONFIG,
     FOTA,
     PROVISIONING,
+    WIFI_SOFTAP,
 } status_blue_t;
 
 typedef struct

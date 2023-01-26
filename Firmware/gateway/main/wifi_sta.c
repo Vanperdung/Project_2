@@ -43,7 +43,7 @@
 #include "button.h"
 #include "smartconfig.h"
 
-static const char *TAG = "WIFI";
+static const char *TAG = "WIFI STA";
 static EventGroupHandle_t wifi_event_group;
 extern status_red_t status_red;
 extern status_blue_t status_blue;

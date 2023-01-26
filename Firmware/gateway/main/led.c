@@ -45,7 +45,6 @@
 #include "led.h"
 #include "button.h"
 
-
 static const char *TAG = "LED";
 extern status_red_t status_red;
 extern status_blue_t status_blue;
@@ -123,6 +122,28 @@ void led_blue_task(void *param)
         case PROVISIONING:
             gpio_set_level(LED_STATUS_BLUE, LED_ON);
             vTaskDelay(100 / portTICK_RATE_MS);
+            break;
+        case WIFI_SOFTAP:
+            gpio_set_level(LED_STATUS_BLUE, LED_ON);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_OFF);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_ON);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_OFF);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_ON);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_OFF);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_ON);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_OFF);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_ON);
+            vTaskDelay(100 / portTICK_RATE_MS);
+            gpio_set_level(LED_STATUS_BLUE, LED_OFF);
+            vTaskDelay(1000 / portTICK_RATE_MS);
             break;
         case NOT_STATE:
             gpio_set_level(LED_STATUS_BLUE, LED_OFF);
