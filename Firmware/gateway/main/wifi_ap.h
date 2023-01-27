@@ -9,6 +9,9 @@
  * 
  */
 
+#ifndef _WIFI_AP_H
+#define _WIFI_AP_H
+
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
@@ -19,3 +22,7 @@
 #define WIFI_AP_SSID "SMART_GATEWAY"
 #define WIFI_AP_CHANNEL 1
 #define WIFI_AP_MAX_CONN 1
+
+void wifi_init_softap(void);
+
+#endif

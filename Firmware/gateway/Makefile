@@ -8,3 +8,5 @@ PROJECT_NAME := gateway
 COMPONENT_ADD_INCLUDEDIRS := components/include
 
 include $(IDF_PATH)/make/project.mk
+
+target_add_binary_data(${CMAKE_PROJECT_NAME}.elf "html/webserver.html" TEXT)

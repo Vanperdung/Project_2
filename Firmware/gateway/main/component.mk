@@ -2,4 +2,4 @@
 # "main" pseudo-component makefile.
 #
 # (Uses default behaviour of compiling all source files in directory, adding 'include' to include path.)
-COMPONENT_EMBED_FILES := ../certs/git_ota.pem
+COMPONENT_EMBED_FILES := ../certs/git_ota.pem ../html/webserver.html

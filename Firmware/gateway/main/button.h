@@ -20,15 +20,24 @@
 #include <stdlib.h>
 
 #define BUTTON_CONFIG_PIN GPIO_NUM_23
-#define TIME_DOWN_SET 3000
+#define TIME_HOLD (3000 / portTICK_RATE_MS)
+#define TIME_CLICK_MIN (20 / portTICK_RATE_MS)
+#define TIME_CLICK_MAX (1000 / portTICK_RATE_MS)
+#define TIME_RESET (1000 / portTICK_RATE_MS)
+
+#define BUTTON_TRIGGER 0
+#define BUTTON_NOT_TRIGGER 1
 
 void button_task(void *param);
 
 typedef struct
 {
-    uint64_t time_down;
+    uint32_t time_down;
     uint8_t pin;
-    uint64_t time_set;
+    uint32_t time_up;
+    uint32_t deltaT;
+    uint8_t click_cnt;
+    uint32_t time_stamp;
 } button_t;
 
 #endif

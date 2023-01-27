@@ -56,6 +56,8 @@
 #include "led.h"
 #include "button.h"
 #include "spiffs_user.h"
+#include "wifi_ap.h"
+#include "webserver.h"
 
 static const char *TAG = "MAIN";
 RTC_NOINIT_ATTR int gateway_mode_flag;
@@ -76,8 +78,9 @@ status_blue_t status_blue = POWER_ON_PROVISIONING;
 TaskHandle_t prov_dev_handle;
 uint8_t dev_uuid[16];
 TimerHandle_t hb_gateway_timer;
-TimerHandle_t hb_node_timer;
 esp_mqtt_client_handle_t client;
+RingbufHandle_t webserver_ring_buf;
+httpd_handle_t server;
 
 void gateway_mesh_init(void)
 {
@@ -103,7 +106,7 @@ void hb_gateway_timer_cb(TimerHandle_t hb_gateway_timer)
     static int sec = 0;
     char buf[50] = {0};
     sec += 30;
-    if(status_red == NORMAL_MODE)
+    if (status_red == NORMAL_MODE)
     {
         sprintf(buf, "{\"action\":\"hb_gateway\",\"runtime\":%d}", sec);
         esp_mqtt_client_publish(client, topic_commands_heartbeat_gateway, buf, strlen(buf), 0, 0);
@@ -125,24 +128,50 @@ void app_main(void)
     ESP_ERROR_CHECK(err);
     hb_gateway_timer = xTimerCreate("Heartbeat Gateway", 30000 / portTICK_RATE_MS, pdTRUE, (void *)0, hb_gateway_timer_cb);
     xTimerStart(hb_gateway_timer, 0);
-    hb_node_timer = xTimerCreate("Heartbeat Node", 10000 / portTICK_RATE_MS, pdTRUE, (void *)0, hb_node_timer_cb);
-    xTimerStart(hb_node_timer, 0);
     mount_SPIFFS();
     xTaskCreate(&led_red_task, "led_red_task", 2048, NULL, 5, NULL);
     xTaskCreate(&led_blue_task, "led_blue_task", 2048, NULL, 5, NULL);
-    xTaskCreate(&button_task, "button_task", 2048, NULL, 5, NULL);
+    xTaskCreate(&button_task, "button_task", 2048, NULL, 15, NULL);
     wifi_init();
     if (gateway_mode_flag == SMARTCONFIG_MODE)
     {
-        gateway_mode_flag = NORMAL_MODE;
+        gateway_mode_flag = MESH_MODE;
         status_blue = SMARTCONFIG;
+        status_red = CONFIG_MODE;
         smartconfig_init();
     }
-    else if(gateway_mode_flag == WIFI_SOFTAP_MODE)
+    else if (gateway_mode_flag == WIFI_SOFTAP_MODE)
     {
-        gateway_mode_flag = NORMAL_MODE;
+        char *buf_recv = NULL;
+        size_t buf_size = 0;
+        char ssid[50] = {0};
+        char password[50] = {0};
+        wifi_config_t wifi_config;
+        webserver_ring_buf = xRingbufferCreate(1028, RINGBUF_TYPE_NOSPLIT);
+        gateway_mode_flag = MESH_MODE;
         status_blue = WIFI_SOFTAP;
-        //
+        status_red = CONFIG_MODE;
+        wifi_init_softap();
+        while (1)
+        {
+            buf_recv = (char *)xRingbufferReceive(webserver_ring_buf, &buf_size, portMAX_DELAY);
+            if (buf_recv)
+            {
+                buf_recv[buf_size] = '\0';
+                sscanf(buf_recv, ",%[^,],%[^,],", ssid, password);
+                ESP_LOGI(TAG, "SSID: %s. Password: %s", ssid, password);
+                bzero(&wifi_config, sizeof(wifi_config_t));
+                memcpy(wifi_config.sta.ssid, ssid, strlen(ssid));
+                memcpy(wifi_config.sta.password, password, strlen(password));
+                stop_webserver(server);
+                esp_wifi_stop();
+                esp_wifi_set_mode(WIFI_MODE_STA);
+                ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+                vRingbufferReturnItem(webserver_ring_buf, (void *)buf_recv);
+                vTaskDelay(2000 / portTICK_RATE_MS);
+                esp_restart();
+            }
+        }
     }
     else
     {

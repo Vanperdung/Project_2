@@ -68,6 +68,7 @@ extern status_blue_t status_blue;
 extern uint8_t dev_uuid[16];
 
 TimerHandle_t xTimer;
+TimerHandle_t hb_node_timer;
 char last_uuid_nw[160] = {0};
 
 static struct esp_ble_mesh_key
@@ -1313,6 +1314,9 @@ esp_err_t ble_mesh_init(void)
     {
         ESP_LOGE(TAG, "Failed to subscribe group address");
     }
+
+    hb_node_timer = xTimerCreate("Heartbeat Node", 10000 / portTICK_RATE_MS, pdTRUE, (void *)0, hb_node_timer_cb);
+    xTimerStart(hb_node_timer, 0);
 
     ESP_LOGI(TAG, "BLE Mesh Provisioner initialized");
 

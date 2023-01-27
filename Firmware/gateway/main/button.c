@@ -41,16 +41,17 @@
 #include "led.h"
 #include "common.h"
 
-
 static const char *TAG = "BUTTON";
 extern RTC_NOINIT_ATTR int gateway_mode_flag;
 void button_task(void *param)
 {
-    TickType_t pre_tick = 0;
-    button_t config = {
+    button_t button = {
         .pin = BUTTON_CONFIG_PIN,
         .time_down = 0,
-        .time_set = TIME_DOWN_SET,
+        .time_up = 0,
+        .deltaT = 0,
+        .click_cnt = 0,
+        .time_stamp = 0,
     };
 
     gpio_config_t config_io;
@@ -58,29 +59,58 @@ void button_task(void *param)
     config_io.mode = GPIO_MODE_INPUT;
     config_io.pull_up_en = GPIO_PULLUP_ONLY;
     config_io.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    config_io.pin_bit_mask = (1ULL << config.pin);
+    config_io.pin_bit_mask = (1ULL << button.pin);
     gpio_config(&config_io);
 
     while (1)
     {
-        if (!gpio_get_level(config.pin))
+        if (gpio_get_level(button.pin) == BUTTON_TRIGGER)
         {
-            if (pre_tick == 0)
-                pre_tick = xTaskGetTickCount();
-            config.time_down += xTaskGetTickCount() - pre_tick;
-            pre_tick = xTaskGetTickCount();
-            if (config.time_down >= (config.time_set / portTICK_RATE_MS))
+            if (button.time_up == 0)
+                button.time_up = (uint32_t)(xTaskGetTickCount() / portTICK_RATE_MS);
+            else
             {
-                ESP_LOGI(TAG, "Trigger smartconfig");
+                button.deltaT = (uint32_t)(xTaskGetTickCount() / portTICK_RATE_MS) - button.time_up;
+            }
+        }
+        else if (gpio_get_level(button.pin) == BUTTON_NOT_TRIGGER && button.time_up != 0 && button.deltaT > TIME_CLICK_MIN)
+        {
+            button.time_down = (uint32_t)(xTaskGetTickCount() / portTICK_RATE_MS);
+            button.deltaT = button.time_down - button.time_up;
+            ESP_LOGI(TAG, "DeltaT: %d", button.deltaT);
+            if (button.deltaT > TIME_HOLD)
+            {
+                ESP_LOGI(TAG, "Trigger Smartconfig");
                 gateway_mode_flag = SMARTCONFIG_MODE;
                 esp_restart();
             }
+            else if (button.deltaT > TIME_CLICK_MIN && button.deltaT < TIME_CLICK_MAX)
+            {
+                button.click_cnt++;
+                ESP_LOGI(TAG, "Button counter: %d", button.click_cnt);
+                if (button.click_cnt == 5)
+                {
+                    ESP_LOGI(TAG, "Trigger SoftAP");
+                    gateway_mode_flag = WIFI_SOFTAP_MODE;
+                    esp_restart();
+                }
+                else
+                {
+                    button.time_stamp = button.time_up;
+                    button.time_up = 0;
+                    button.time_down = 0;
+                    button.deltaT = 0;
+                }
+            }
         }
-        else
+        else if (gpio_get_level(button.pin) == BUTTON_NOT_TRIGGER && (uint32_t)(xTaskGetTickCount() / portTICK_RATE_MS) - button.time_stamp > TIME_RESET && button.time_stamp != 0)
         {
-            config.time_down = 0;
-            pre_tick = 0;
+            button.time_up = 0;
+            button.time_down = 0;
+            button.deltaT = 0;
+            button.click_cnt = 0;
+            button.time_stamp = 0;
         }
-        vTaskDelay(50 / portTICK_RATE_MS);
+        vTaskDelay(10 / portTICK_RATE_MS);
     }
 }

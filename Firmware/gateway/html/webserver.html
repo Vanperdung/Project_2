@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h1>Smart Gateway</h1>
+    <!-- <img src="../image/hust.png" alt="fmm"> -->
+    <form action="/action_page.php">
+      <label>SSID:</label>
+      <input type="text" id="ssid" name="ssid" /><br /><br />
+      <label>Password:</label>
+      <input type="text" id="pwd" name="pwd" minlength="8" /><br /><br />
+      <input type="button" value="Submit" onclick="post()" />
+    </form>
+    <script>
+      function post() {
+        var ssid = document.getElementById("ssid");
+        var password = document.getElementById("pwd");
+        var xhttp = new XMLHttpRequest();
+        var c = ",";
+        var arr = c.concat(ssid.value, c, password.value, c);
+        xhttp.open("POST", "/post_wifi", true);
+        xhttp.send(arr);
+      }
+    </script>
+
+    <style></style>
+  </body>
+</html>

@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define NORMAL_MODE 11
+#define MESH_MODE 11
 #define SMARTCONFIG_MODE 20
 #define WIFI_SOFTAP_MODE 31
 
@@ -27,6 +27,7 @@ typedef enum
 {
     LOCAL_MODE,
     NORMAL_MODE,
+    CONFIG_MODE,
 } status_red_t;
 
 typedef enum
