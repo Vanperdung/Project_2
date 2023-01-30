@@ -1,0 +1,19 @@
+Change Component Designator: OldDesignator=IC2 NewDesignator=IC1
+Change Component Designator: OldDesignator=IC3 NewDesignator=IC2
+Change Component Designator: OldDesignator=IC4 NewDesignator=IC3
+Change Component Designator: OldDesignator=U1 NewDesignator=U2
+Change Component Designator: OldDesignator=U2 NewDesignator=U3
+Change Component Designator: OldDesignator=U3 NewDesignator=U4
+Change Component Designator: OldDesignator=U4 NewDesignator=U5
+Added Component: Designator=U1(DB207S)
+Added Pin To Net: NetName=NetC1_1 Pin=U1-1
+Added Pin To Net: NetName=GND_AC Pin=U1-4
+Change Net Name : Old Net Name=NetIC2_4 New Net Name=NetIC1_4
+Change Net Name : Old Net Name=NetIC3_3 New Net Name=NetIC2_3
+Added Pin To Net: NetName=NetL1_1 Pin=L1-1
+Added Pin To Net: NetName=NetL1_1 Pin=U1-2
+Added Net: Name=NetL1_1
+Added Pin To Net: NetName=NetL1_3 Pin=L1-3
+Added Pin To Net: NetName=NetL1_3 Pin=U1-3
+Added Net: Name=NetL1_3
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component U5 LM1117-ADJ

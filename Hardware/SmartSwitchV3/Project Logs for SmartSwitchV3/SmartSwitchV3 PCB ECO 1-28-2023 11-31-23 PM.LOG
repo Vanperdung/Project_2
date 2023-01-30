@@ -1,0 +1,5 @@
+Removed Pin From Net: NetName=IO33 Pin=LED3-1
+Removed Pin From Net: NetName=IO27 Pin=LED5-1
+Added Pin To Net: NetName=IO27 Pin=LED3-1
+Added Pin To Net: NetName=IO33 Pin=LED5-1
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component USB1 USB Micro 5p DIP

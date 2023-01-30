@@ -74,6 +74,10 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=VDCNMIBM
 
+[GeneratedDocument1]
+DocumentPath=Project Outputs for SmartSwitchV3\Design Rule Check - SmartSwitchV3.html
+DItemRevisionGUID=
+
 [Configuration1]
 Name=Sources
 ParameterCount=0

@@ -1,0 +1,41 @@
+Removed Pin From Net: NetName=NetC1_1 Pin=C2-1
+Removed Pin From Net: NetName=GND_AC Pin=C2-2
+Removed Member From Class: ClassName=AC Member=NetC6_1
+Change Component Designator: OldDesignator=C3 NewDesignator=C2
+Change Component Designator: OldDesignator=C4 NewDesignator=C3
+Change Component Designator: OldDesignator=C5 NewDesignator=C4
+Change Component Designator: OldDesignator=C6 NewDesignator=C5
+Change Component Designator: OldDesignator=C7 NewDesignator=C6
+Change Component Designator: OldDesignator=C8 NewDesignator=C7
+Change Component Designator: OldDesignator=C9 NewDesignator=C8
+Change Component Designator: OldDesignator=C10 NewDesignator=C9
+Change Component Designator: OldDesignator=C11 NewDesignator=C10
+Change Component Designator: OldDesignator=C12 NewDesignator=C11
+Change Component Designator: OldDesignator=C13 NewDesignator=C12
+Change Component Designator: OldDesignator=C14 NewDesignator=C13
+Change Component Designator: OldDesignator=C15 NewDesignator=C14
+Change Component Designator: OldDesignator=C16 NewDesignator=C15
+Change Component Designator: OldDesignator=C17 NewDesignator=C16
+Change Component Designator: OldDesignator=C18 NewDesignator=C17
+Change Component Designator: OldDesignator=C19 NewDesignator=C18
+Change Component Designator: OldDesignator=C20 NewDesignator=C19
+Change Component Designator: OldDesignator=C21 NewDesignator=C20
+Change Component Designator: OldDesignator=C22 NewDesignator=C21
+Change Net Name : Old Net Name=NetC3_2 New Net Name=NetC2_2
+Change Net Name : Old Net Name=NetC4_1 New Net Name=NetC3_1
+Change Net Name : Old Net Name=NetC6_1 New Net Name=NetC5_1
+Change Net Name : Old Net Name=NetC6_2 New Net Name=NetC5_2
+Change Net Name : Old Net Name=NetC8_1 New Net Name=NetC7_1
+Change Net Name : Old Net Name=NetC8_2 New Net Name=NetC7_2
+Change Net Name : Old Net Name=NetC9_2 New Net Name=NetC8_2
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C2 1nF/400V
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C4 470uF/16V
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C6 14D471K
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C8 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C10 10uF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C11 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C13 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C15 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C17 30pF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C19 10uF
+Added Member To Class: ClassName=AC Member=Wire NetC5_1

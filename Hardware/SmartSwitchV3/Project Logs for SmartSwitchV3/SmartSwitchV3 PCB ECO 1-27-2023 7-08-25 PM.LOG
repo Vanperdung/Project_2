@@ -1,0 +1,7 @@
+Added Pin To Net: NetName=NetIC1_3 Pin=IC1-3
+Added Pin To Net: NetName=NetIC1_3 Pin=L1-3
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component IC1 MB6S
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component IC3 TL431
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component U1 OPTO PC817 SMD
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component U2 ESP32-WROOM-32
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component U4 LM1117-ADJ

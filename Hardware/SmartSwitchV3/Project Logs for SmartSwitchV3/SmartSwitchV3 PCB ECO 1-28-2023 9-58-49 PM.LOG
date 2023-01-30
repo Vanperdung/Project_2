@@ -1,0 +1,2 @@
+Removed Pin From Net: NetName=+5 Pin=USB1-1
+Change Component Footprint: Designator=D1 Old Footprint=DO-214AC(SMA) New Footprint=DO-214AA(SMB)

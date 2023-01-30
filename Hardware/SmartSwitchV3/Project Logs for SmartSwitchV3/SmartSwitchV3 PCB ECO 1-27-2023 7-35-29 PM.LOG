@@ -1,0 +1,5 @@
+Removed Member From Class: ClassName=AC Member=NetJP5_1
+Added Pin To Net: NetName=L_AC Pin=JP5-1
+Added Pin To Net: NetName=L_AC Pin=R8-1
+Added Member To Class: ClassName=AC Member=Wire L_AC
+Added Room: Name=SmartSwitchV3

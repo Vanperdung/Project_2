@@ -1,0 +1,12 @@
+Change Component Footprint: Designator=D1 Old Footprint=DO-214AC(SMA) New Footprint=DIO-SMD-B
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C2 1nF/400V
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C4 470uF/16V
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C6 14D471K
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C8 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C10 10uF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C11 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C13 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C15 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C17 30pF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C19 10uF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C21 30pF

@@ -1,0 +1,9 @@
+Removed Pin From Net: NetName=TPQ0 Pin=U3-26
+Removed Pin From Net: NetName=TPQ1 Pin=U3-33
+Removed Pin From Net: NetName=TPQ2 Pin=U3-36
+Removed Pin From Net: NetName=TPQ3 Pin=U3-37
+Added Pin To Net: NetName=TPQ3 Pin=U3-26
+Added Pin To Net: NetName=TPQ2 Pin=U3-33
+Added Pin To Net: NetName=TPQ1 Pin=U3-36
+Added Pin To Net: NetName=TPQ0 Pin=U3-37
+Added Room: Name=SmartSwitchV3

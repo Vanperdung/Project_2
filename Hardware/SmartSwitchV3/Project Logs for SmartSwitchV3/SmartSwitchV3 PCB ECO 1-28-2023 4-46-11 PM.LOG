@@ -1,0 +1,26 @@
+Removed Member From Class: ClassName=TP Member=NetC17_2
+Removed Member From Class: ClassName=TP Member=NetC21_2
+Added Pin To Net: NetName=RL1 Pin=U3-27
+Added Pin To Net: NetName=RL2 Pin=U3-28
+Added Pin To Net: NetName=RL3 Pin=U3-30
+Added Pin To Net: NetName=RL4 Pin=U3-31
+Added Pin To Net: NetName=CH340_TXD Pin=U3-34
+Added Pin To Net: NetName=CH340_RXD Pin=U3-35
+Change Net Name : Old Net Name=IO4 New Net Name=TPQ0
+Change Net Name : Old Net Name=IO21 New Net Name=TPQ1
+Change Net Name : Old Net Name=IO22 New Net Name=TPQ2
+Change Net Name : Old Net Name=IO23 New Net Name=TPQ3
+Change Net Name : Old Net Name=NetC16_2 New Net Name=TP3
+Change Net Name : Old Net Name=NetC17_2 New Net Name=TP2
+Change Net Name : Old Net Name=NetC20_2 New Net Name=TP1
+Change Net Name : Old Net Name=NetC21_2 New Net Name=TP0
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C11 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C13 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C15 100nF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C17 30pF
+Added Member To Class: ClassName=SmartSwitchV3 Member=Component C19 10uF
+Added Member To Class: ClassName=TP Member=Wire TP0
+Added Member To Class: ClassName=TP Member=Wire TP1
+Added Member To Class: ClassName=TP Member=Wire TP2
+Added Member To Class: ClassName=TP Member=Wire TP3
+Added Room: Name=SmartSwitchV3
