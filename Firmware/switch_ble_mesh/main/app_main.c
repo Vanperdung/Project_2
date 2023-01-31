@@ -55,7 +55,7 @@
 #define ESP_BLE_MESH_VND_MODEL_OP_STATUS ESP_BLE_MESH_MODEL_OP_3(0x01, CID_ESP)
 
 #define HOLD_TIME (3000 / portTICK_RATE_MS)
-#define CLICK_TIME (100 / portTICK_RATE_MS)
+#define CLICK_TIME (50 / portTICK_RATE_MS)
 
 static const char *TAG = "MAIN";
 static uint8_t dev_uuid[16] = {0xdd, 0xdd};
