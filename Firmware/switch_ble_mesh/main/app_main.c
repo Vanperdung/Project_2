@@ -76,6 +76,7 @@ typedef struct
     uint8_t target_state;
     gpio_num_t relay_pin;
     gpio_num_t touch_pad_pin;
+    gpio_num_t led_pin;
     time_evt_t time_evt;
 } smart_relay_t;
 
@@ -87,10 +88,10 @@ typedef struct
 
 smart_switch_t smart_switch = {
     .hb_gate_count = 0,
-    .relays[0] = {.relay_pin = GPIO_NUM_19, .touch_pad_pin = GPIO_NUM_4},
-    .relays[1] = {.relay_pin = GPIO_NUM_18, .touch_pad_pin = GPIO_NUM_21},
-    .relays[2] = {.relay_pin = GPIO_NUM_17, .touch_pad_pin = GPIO_NUM_22},
-    .relays[3] = {.relay_pin = GPIO_NUM_16, .touch_pad_pin = GPIO_NUM_23},
+    .relays[0] = {.relay_pin = GPIO_NUM_16, .touch_pad_pin = GPIO_NUM_4, .led_pin = GPIO_NUM_33,},
+    .relays[1] = {.relay_pin = GPIO_NUM_17, .touch_pad_pin = GPIO_NUM_21, .led_pin = GPIO_NUM_26,},
+    .relays[2] = {.relay_pin = GPIO_NUM_18, .touch_pad_pin = GPIO_NUM_22, .led_pin = GPIO_NUM_27,},
+    .relays[3] = {.relay_pin = GPIO_NUM_19, .touch_pad_pin = GPIO_NUM_23, .led_pin = GPIO_NUM_32,},
 };
 
 static esp_ble_mesh_cfg_srv_t config_server = {
@@ -211,6 +212,7 @@ void relay_change_output(uint8_t index, uint8_t state)
     if (smart_switch.relays[index].current_state != state)
     {
         gpio_set_level((gpio_num_t)smart_switch.relays[index].relay_pin, state);
+        gpio_set_level((gpio_num_t)smart_switch.relays[index].led_pin, state);
         smart_switch.relays[index].current_state = state;
     }
 }
@@ -336,7 +338,7 @@ void ble_mesh_publish_state_msg(uint16_t publish_addr)
         return;
     }
     if (model->pub == NULL || model->pub->publish_addr == ESP_BLE_MESH_ADDR_UNASSIGNED)
-    {
+    {   
         ESP_LOGW(TAG, "Signed publish address 0x%04x", publish_addr);
         model->pub->publish_addr = publish_addr;
     }
@@ -621,6 +623,14 @@ void gpio_init(void)
 
         gpio_num_t num = (gpio_num_t)(smart_switch.relays[i].relay_pin & 0x1F);
         smart_switch.relays[i].current_state = (GPIO_REG_READ(GPIO_OUT_REG) >> num) & 1U;
+
+        gpio_config_t led_cfg;
+        led_cfg.intr_type = GPIO_INTR_DISABLE;
+        led_cfg.mode = GPIO_MODE_OUTPUT;
+        led_cfg.pull_up_en = GPIO_PULLUP_DISABLE;
+        led_cfg.pull_down_en = GPIO_PULLDOWN_DISABLE;
+        led_cfg.pin_bit_mask = (1ULL << smart_switch.relays[i].led_pin);
+        gpio_config(&led_cfg);
     }
 }
 
@@ -650,6 +660,7 @@ void touch_pad_task(void *param)
                 smart_switch.relays[i].time_evt.time_down = (uint32_t)xTaskGetTickCount() / portTICK_RATE_MS;
                 ESP_LOGI(TAG, "Change state in gpio num %d", smart_switch.relays[i].relay_pin);
                 gpio_set_level(smart_switch.relays[i].relay_pin, (uint32_t)(1 - smart_switch.relays[i].current_state));
+                gpio_set_level(smart_switch.relays[i].led_pin, (uint32_t)(1 - smart_switch.relays[i].current_state));
                 smart_switch.relays[i].current_state = 1 - smart_switch.relays[i].current_state;
                 memset(&smart_switch.relays[i].time_evt, 0, sizeof(smart_switch.relays[i].time_evt));
                 ble_mesh_publish_state_msg(0xC000);

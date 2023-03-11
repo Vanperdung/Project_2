@@ -85,6 +85,7 @@ void led_red_task(void *param)
         case CONFIG_MODE:
             gpio_set_level(LED_STATUS_RED, LED_OFF);
             vTaskDelay(100 / portTICK_RATE_MS);
+            break;
         default:
             gpio_set_level(LED_STATUS_RED, LED_OFF);
             vTaskDelay(100 / portTICK_RATE_MS);

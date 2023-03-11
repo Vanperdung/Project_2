@@ -99,7 +99,7 @@ static void smartconfig_event_handler(void* event_handler_arg, esp_event_base_t 
         memcpy(password, evt->password, sizeof(evt->password));
         ESP_LOGI(TAG, "SSID:%s", ssid);
         ESP_LOGI(TAG, "PASSWORD:%s", password);
-        if(evt->type == SC_TYPE_ESPTOUCH) 
+        if(evt->type == SC_TYPE_ESPTOUCH_V2) 
         {
 			ESP_ERROR_CHECK(esp_smartconfig_get_rvd_data(rvd_data, sizeof(rvd_data)));
 			ESP_LOGI(TAG, "RVD_DATA:");

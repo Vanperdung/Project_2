@@ -178,7 +178,8 @@ void vTimerCallback(TimerHandle_t xTimer)
 
 void hb_node_timer_cb(TimerHandle_t hb_node_timer)
 {
-    ble_mesh_send_vendor_message_all(0x00, ESP_BLE_MESH_VND_MODEL_OP_HB, false);
+    if (status_blue != FOTA)
+        ble_mesh_send_vendor_message_all(0x00, ESP_BLE_MESH_VND_MODEL_OP_HB, false);
 }
 
 esp_err_t bluetooth_init(void)
